@@ -1,0 +1,10 @@
+*.log
+*.aux
+*.gz
+*.out
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.db
+LabReport/*.pdf

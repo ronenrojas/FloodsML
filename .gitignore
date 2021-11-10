@@ -8,3 +8,6 @@
 *.run.xml
 *.db
 LabReport/*.pdf
+.idea/**
+.ipynb_checkpoints/**
+./*.ipynb

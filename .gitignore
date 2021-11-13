@@ -7,4 +7,9 @@
 *.blg
 *.run.xml
 *.db
+*.nav
+*.exe
+*.o
 LabReport/*.pdf
+.idea/
+__pycache__/

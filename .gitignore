@@ -12,4 +12,5 @@
 *.o
 LabReport/*.pdf
 .idea/
+.vscode/
 __pycache__/

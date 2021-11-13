@@ -18,11 +18,11 @@ int fland1(struct SMA *sma,struct FSUM1 *fsum1)
 /*  Last revised poy 2/20/94 */
 
 {
-   int i,j,k,ninc;
+   int i,ninc;
    double edmnd,e1,e2,e3,e4,e5,red,uzrat,ratlzt,saved,ratlz;
-   double del,twx,roimp,spf,ssur,sif,sperc,sdro,spbf,sbf;
+   double del,twx,roimp,ssur,sif,sperc,sdro,spbf,sbf;
    double dinc,pinc,duz,dlzp,dlzs,parea,adsur,ratio;
-   double addro,bf,percm,zp,perc,defr,uzdefr,check,perct;
+   double addro,bf,percm,zp,perc,defr,check,perct;
    double percf,hpl,ratlp,ratls,fracp,percp,percs,excess;
    double sur,eused,tbf,bfcc,bfp,bfs,bfncc,tet;
    double rsum[7];
@@ -202,7 +202,6 @@ int fland1(struct SMA *sma,struct FSUM1 *fsum1)
              printf("%f  %f  %f\n",sma->lztwm,sma->lzfpm,sma->lzfsm);
              exit(1);  
           }
-          uzdefr = 1.0 - (sma->uztwc + sma->uzfwc) / (sma->uztwm + sma->uzfwm);
           perc *= (1.0 + zp * pow(defr,sma->rexp));
 
 /* NOTE...PERCOLATION OCCURS FROM UZFWC BEFORE PAV IS ADDED */

@@ -57,7 +57,7 @@ MODEL RUNNING.... Feyzan, August 2000*/
 
 int sac_sma(struct PARAMETERS *parameters,struct OBS *obs,
 	  struct OUTPUT *output) {
-  int i,j,k;
+  int i,j;
   int ii,n,gg,t_end,t,fact ;
   float kk ;
   

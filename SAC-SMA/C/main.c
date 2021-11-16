@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
      outflux = fopen(argv[3], "w"); 
      for (i = 0; i < obs.datalength; i++) {
-          fprintf(outflux, "%10f %10f \n", obs.Qobs[i][0], output.Qcomp_total[i][0]);
+          fprintf(outflux, "%lf %lf \n", obs.Qobs[i][0], output.Qcomp_total[i][0]);
      }
      fclose(outflux);
      return 0;

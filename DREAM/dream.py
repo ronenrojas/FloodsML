@@ -91,4 +91,11 @@ class Dream:
         plt.ylabel('Precipitation / runoff (mm/day)')
         plt.show()
 
+    def to_SAC_SMA(self, file_name):
+        precip = self.input_dict["precip"]
+        runoff = self.output_dict["runoff"]
+        df = pd.DataFrame(np.array([runoff, precip, precip, precip, precip]).T)
+        df.to_csv(file_name, sep=' ', header=False, index=False)
+
+
 

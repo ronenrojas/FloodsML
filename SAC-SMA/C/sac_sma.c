@@ -83,19 +83,6 @@ int sac_sma(struct PARAMETERS *parameters,struct OBS *obs,
   sma.side  = 0.0;
   sma.pxmlt = 1.0;
 
-/* sma.rserv = parameters->parameter[13]->current;
-   sma.side  = parameters->parameter[16]->current;
-   sma.pxmlt = parameters->parameter[17]->current;
-
-*/
-/*  INITIAL STATES */
-/*  sma.uztwc = parameters->parameter[18]->current;
-  sma.uzfwc = parameters->parameter[19]->current;
-  sma.lztwc = parameters->parameter[20]->current;
-  sma.lzfsc = parameters->parameter[21]->current;
-  sma.lzfpc = parameters->parameter[22]->current;
-  sma.adimc = parameters->parameter[23]->current;
-*/
    sma.uztwc = 0.5 * sma.uztwm;
    sma.uzfwc = 0.5 * sma.uzfwm;
    sma.lztwc = 0.5 * sma.lztwm;
@@ -103,32 +90,7 @@ int sac_sma(struct PARAMETERS *parameters,struct OBS *obs,
    sma.lzfpc = 0.5 * sma.lzfpm;
    sma.adimc = 0.5 * (sma.uztwm + sma.lztwm);
 
-  /* ASSIGN UH VALUES */
-/*
-  sma.UH[0] = 1.4;
-  sma.UH[1] = 3.2;
-  sma.UH[2] = 4.5;
-  sma.UH[3] = 5.1;
-  sma.UH[4] = 5.2;
-  sma.UH[5] = 5.4;
-  sma.UH[6] = 6.1;
-  sma.UH[7] = 6.9;
-  sma.UH[8] = 7.3 ;
-  sma.UH[9] = 7.3  ;
-  sma.UH[10] = 7.1;
-  sma.UH[11] = 6.8;
-  sma.UH[12] = 6.1;
-  sma.UH[13] = 5.2;
-  sma.UH[14] = 4.2;
-  sma.UH[15] = 3.4;
-  sma.UH[16] = 2.6;
-  sma.UH[17] = 1.6;
-  sma.UH[18] = 0.6; 
-  sma.UH_nord = 19;
-*/
 
-
-/* results from the gamma function --  eylon */
 
  n =   parameters->parameter[15]->current;
  kk  = parameters->parameter[14]->current;

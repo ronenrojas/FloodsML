@@ -25,7 +25,7 @@ int fland1(struct SMA *sma,struct FSUM1 *fsum1)
    double addro,bf,percm,zp,perc,defr,check,perct;
    double percf,hpl,ratlp,ratls,fracp,percp,percs,excess;
    double sur,eused,tbf,bfcc,bfp,bfs,bfncc,tet;
-   double rsum[7];
+   double rsum[7] = {0};
 
 /*    REPARAMETERIZATION OPTION */
 /* izflag=2; reparameterized percolation,

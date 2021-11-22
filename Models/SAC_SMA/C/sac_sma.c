@@ -91,9 +91,9 @@ int sac_sma(struct PARAMETERS *parameters,struct OBS *obs,
    sma.adimc = 0.5 * (sma.uztwm + sma.lztwm);
 
 
+   kk  = parameters->parameter[14]->current;
+   n =   parameters->parameter[15]->current;
 
- n =   parameters->parameter[15]->current;
- kk  = parameters->parameter[14]->current;
 
  fact = 100;
  t_end = 19;
@@ -108,7 +108,7 @@ int sac_sma(struct PARAMETERS *parameters,struct OBS *obs,
  sma.UH_nord = 19;
 
 
-/*DIRTY METHOD TO CANCEL THE ROUTING PROCEDURE  */ /*eylon */
+/*DIRTY METHOD TO CANCEL THE ROUTING PROCEDURE  */ /*ey                        lon */
 /*  sma.UH[0] = 1. ;
   sma.UH_nord = 1;
 */

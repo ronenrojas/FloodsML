@@ -1,6 +1,17 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy.special as scp
+
+
+def synthetic_uh(dt, k, n, tr, L):
+    # each channel segment responses with n linear reservoirs with coeffient k[s^-1] (S=kQ)
+    # and a translation of tr (int) seconds, L maximal timesteps (dt)
+    trdt = round(tr / dt)
+    UH = np.zeros(L)
+    for i in range(0, L - trdt):
+        UH[i + trdt] = 1 / (k * scp.gamma(n)) * (((i) * dt / k) ** (n - 1)) * np.exp(-((i) * dt / k))
+    return UH
 
 
 class Dream:
@@ -77,24 +88,42 @@ class Dream:
                 else:
                     aet[ind] = pet * par_beta * (theta - par_tpwp) / (par_tfc - par_tpwp)
                 theta = theta - aet[ind] / par_z
+        UHL = 20
+        dt = 3600*24
+        UHk = 1 * 3600 * 24
+        UHn = 3
+        UHtr = 0
+        UH = synthetic_uh(dt, UHk, UHn, UHtr, UHL)
+        output_dict['runoff_before'] = runoff
+        output_dict['UH'] = UH
+        h = np.convolve(runoff, UH * dt, mode='full')
+        runoff = h[0:len(runoff)]
         output_dict['runoff'] = runoff
         output_dict['recharge'] = recharge
         output_dict['aet'] = aet
         self.set_output(output_dict)
 
     def plot(self):
-        precip = self.input_dict["precip"]
+        precip = self.output_dict["UH"]
         runoff = self.output_dict["runoff"]
+        runoff_before = self.output_dict['runoff_before']
         plt.plot(precip, 'b')
         plt.plot(runoff, 'g')
+        plt.plot(runoff_before, 'k')
         plt.xlabel('Day')
         plt.ylabel('Precipitation / runoff (mm/day)')
+        plt.legend(["Precipitation", "runoff", "runoff before"])
         plt.show()
 
     def to_SAC_SMA(self, file_name):
         precip = self.input_dict["precip"]
         runoff = self.output_dict["runoff"]
         df = pd.DataFrame(np.array([runoff, precip, precip, precip, precip]).T)
+        df.to_csv(file_name, sep=' ', header=False, index=False)
+
+    def out_to_csv(self, file_name):
+        runoff = self.output_dict["runoff"]
+        df = pd.DataFrame(np.array([runoff]).T)
         df.to_csv(file_name, sep=' ', header=False, index=False)
 
 

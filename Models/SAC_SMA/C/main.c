@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
      i = 0;
      while (fgets(s, MAXLINE, indata) != NULL) {
-          sscanf(s, "%lf %lf %lf %lf %lf %lf", &obs.Qobs[i][0], &obs.PET[i][0],
+          sscanf(s, "%lf %lf %lf %lf %lf", &obs.PET[i][0],
                  &obs.Precip[i][0], &obs.Precip[i][1], &obs.Precip[i][2],
                  &obs.Precip[i][3]);
           i++;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 
      outflux = fopen(argv[3], "w"); 
      for (i = 0; i < obs.datalength; i++) {
-          fprintf(outflux, "%lf %lf \n", obs.Qobs[i][0], output.Qcomp_total[i][0]);
+          fprintf(outflux, "%lf \n", output.Qcomp_total[i][0]);
      }
      fclose(outflux);
      return 0;

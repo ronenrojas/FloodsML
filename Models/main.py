@@ -1,9 +1,42 @@
-from dream import Dream
+from DREAM.dream import Dream
+from SAC_SMA.sac_sma import SacSma
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    dream_sim = Dream(param_file="Data/Par.csv")
+    dream_sim = Dream(param_file="Dream/Par.csv")
     dream_sim.read_input("Data/Data.csv")
     dream_sim.simulate()
-    #dream_sim.plot()
-    dream_sim.to_SAC_SMA("SAC_SMA.in")
+    dream_sim.plot()
+    #dream_sim.out_to_csv("rundir/output.csv")
+    """
+    sac = SacSma(param_file="SAC_SMA\\C\\par_update.in")
+    sac.read_input("Data/Data.csv")
+    sac.simulate()
+    #sac.plot()
+
+    fig, ax1 = plt.subplots()
+    Q = dream_sim.output_dict["runoff"]
+    x = range(len(Q))
+    color = 'tab:red'
+    ax1.set_xlabel('days')
+    ax1.set_ylabel('DREAMS', color=color)
+    ax1.plot(x, Q, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    Q = sac.output_dict["runoff"]
+    x = range(len(Q))
+    color = 'tab:blue'
+    ax2.set_ylabel('SAC-SMA', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x, Q/5.0, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.show()
+    """
+
+
+
+
+
 

@@ -19,26 +19,27 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import tqdm
+import tqdm.notebook
+import tqdm
 import random
 import datetime
 import pathlib
 import pytz
 import glob
 import re
-from google.colab import drive
 from torch.autograd import Variable
 import seaborn as sns
 import os
 import shutil
 import copy
 import matplotlib.dates as mdates
-drive.mount('/content/drive', force_remount=True)
 
-parent_dir = pathlib.Path(__file__).resolve().parent
+parent_dir = Path(os.getcwd()).__str__()
 #### Definitions ####
 RUN_LOCALLY = True
-PATH_ROOT = "drive/MyDrive/Efrat/" # Change only here the path
-PATH_DATA_FILE = PATH_ROOT if not RUN_LOCALLY else parent_dir + "/" + "Data/raw_data_fixed_17532_3_22_38"
+
+PATH_ROOT = Path(os.getcwd()).__str__() + "/" # Change only here the path
+PATH_DATA_FILE = PATH_ROOT if not RUN_LOCALLY else parent_dir + Path("/" + "Data/raw_data_fixed_17532_3_22_38").__str__()
 PATH_LABEL = PATH_ROOT + "Data/CWC/"
 PATH_LOC  = PATH_ROOT +"Data/LatLon/{0}_lat_lon" 
 PATH_DATA_CLEAN  = PATH_ROOT + "Data/IMD_Lat_Lon_reducded/"
@@ -211,7 +212,7 @@ class IMDGodavari(Dataset):
     self.num_features = None
     self.include_static = include_static
     # load data
-    self.x , self.y = self._load_data(all_data)
+    self.x, self.y = self._load_data(all_data)
     # store number of samples as class attribute
     self.num_samples = self.x.shape[0]
     # store number of features as class attribute
@@ -391,9 +392,17 @@ class DNN(nn.Module):
 class CNN(nn.Module):
   def __init__(self, num_channels: int, input_size: int):
     super(CNN, self).__init__()
+    # doing convolution with 3 by 3 filter matrix
+    # the input is: 1 or 2 or 3 (depending on the number of channels)
+    # the output is: 16
     self.conv1 = nn.Conv2d(num_channels, 16, 3)
+    #
     self.pool = nn.MaxPool2d(2, 2)
+    # doing convolution with 3 by 3 filter matrix
+    # the input is: 32
+    # the output is: 16
     self.conv2 = nn.Conv2d(16, 32, 3)
+    # pay attention to the convolution (1024)!!!!! (comment of Ronen)
     self.fc1 = nn.Linear(1024, 120)
     self.fc2 = nn.Linear(120, input_size)
     self.dropout1 = nn.Dropout()
@@ -429,23 +438,31 @@ class CNNLSTM(nn.Module):
       param x: Tensor of shape [batch size, seq length, num features] containing the input data for the LSTM network.
       :return: Tensor containing the network predictions
     """
-    #print(x.size())
-    batch_size, timesteps, _ = x.size()
-    # cropping the "image" part of the input
-    image = x[:,:, :self.num_channels*H_LAT*W_LON]
-    image= image.view(batch_size, timesteps, self.num_channels, H_LAT*W_LON)
-    image= image.view(batch_size, timesteps, self.num_channels, H_LAT, W_LON)
-    c_in = image.view(batch_size * timesteps, self.num_channels, H_LAT, W_LON)
+    # x is of size:
+    # 1. batch_size (some sample of all the training set)
+    # 2. times_steps - the length of the sequence (for example 30, if we are talking about one month)
+    # 3. (H_LAT*W_LON + 4)
+    # the 4 is for the 4 static features
+    # for example, currently, x.size() is - (64, 30, 840)
+    batch_size, time_steps, _ = x.size()
+    # cropping to remove the last 4 static feature (and getting an "image")
+    image = x[:, :, :self.num_channels*H_LAT*W_LON]
+    # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT*W_LON)
+    image = image.view(batch_size, time_steps, self.num_channels, H_LAT*W_LON)
+    # reshaping the image to 5 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT, W_LON)
+    image = image.view(batch_size, time_steps, self.num_channels, H_LAT, W_LON)
+    # reshaping the image to 4 dimensional tensor of (batch_size * time_steps, num_channles, H_LAT, W_LON)
+    c_in = image.view(batch_size * time_steps, self.num_channels, H_LAT, W_LON)
     # CNN part
     c_out = self.cnn(c_in)
     # CNN output should in the size of input size - atrributes_size
-    cnn_out = c_out.view(batch_size, timesteps, -1)
+    cnn_out = c_out.view(batch_size, time_steps, -1)
     # cropping the "image" part of the input 
-    a_in = x[:,:, self.num_channels*H_LAT*W_LON:]
+    a_in = x[:, :, self.num_channels*H_LAT*W_LON:]
     r_in = torch.cat((cnn_out, a_in), 2)
     output, (h_n, c_n) = self.lstm(r_in)
     # perform prediction only at the end of the input sequence
-    pred = self.fc(self.dropout(h_n[-1,:,:]))
+    pred = self.fc(self.dropout(h_n[-1, :, :]))
     return pred
 
 def train_epoch(model, optimizer, loader, loss_func, epoch):
@@ -675,7 +692,8 @@ num_attributes = CATCHMENT_DICT['Tekra'].size
 if INCLUDE_STATIC==False:
   num_attributes = 0
 input_size = (sum(idx_features)*W_LON*H_LAT+num_attributes)*sequence_length
-model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size, dropout_rate=dropout_rate, num_channels=sum(idx_features), num_attributes=num_attributes ).to(device)
+model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
+                dropout_rate=dropout_rate, num_channels=sum(idx_features), num_attributes=num_attributes).to(device)
 #model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers, num_hidden_units=num_hidden_units, dropout_rate=dropout_rate).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 loss_func = nn.MSELoss()

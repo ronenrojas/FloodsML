@@ -394,14 +394,14 @@ class CNN(nn.Module):
     super(CNN, self).__init__()
     # doing convolution with 3 by 3 filter matrix
     # the input is: 1 or 2 or 3 (depending on the number of channels)
-    # the output is: 16
+    # the output is: 16 channels
     self.conv1 = nn.Conv2d(num_channels, 16, 3)
     # doing max pooling to the output matrix of the previous stage (getting the max of the
     # pool of 2 by 2 matrix going over the large matrix from previous stage)
     self.pool = nn.MaxPool2d(2, 2)
     # doing convolution with 3 by 3 filter matrix
-    # the input is: 32
-    # the output is: 16
+    # the input is: 16 channels
+    # the output is: 32 channels
     self.conv2 = nn.Conv2d(16, 32, 3)
     # pay attention to the convolution (1024)! (comment of Ronen, Efrat calculated this)
     self.fc1 = nn.Linear(1024, 120)
@@ -442,11 +442,12 @@ class CNNLSTM(nn.Module):
     # x is of size:
     # 1. batch_size (some sample of all the training set)
     # 2. times_steps - the length of the sequence (for example 30, if we are talking about one month)
-    # 3. (H_LAT*W_LON + 4)
+    # 3. (num_channels*H_LAT*W_LON + 4)
     # the 4 is for the 4 static features
     # for example, currently, x.size() is - (64, 30, 840)
     batch_size, time_steps, _ = x.size()
-    # cropping to remove the last 4 static feature (and getting an "image")
+    # getting the "image" part of the input
+    # (removing the last 4 static features)
     image = x[:, :, :self.num_channels*H_LAT*W_LON]
     # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT*W_LON)
     image = image.view(batch_size, time_steps, self.num_channels, H_LAT*W_LON)
@@ -456,15 +457,17 @@ class CNNLSTM(nn.Module):
     c_in = image.view(batch_size * time_steps, self.num_channels, H_LAT, W_LON)
     # CNN part
     c_out = self.cnn(c_in)
-    # CNN output should in the size of input size - atrributes_size
+    # CNN output should be in the size of (input size - attributes_size)
     cnn_out = c_out.view(batch_size, time_steps, -1)
-    # cropping the "image" part of the input 
+    # getting the "non-image" part of the input (last 4 attributes)
+    # (removing the "image" part)
     a_in = x[:, :, self.num_channels*H_LAT*W_LON:]
     r_in = torch.cat((cnn_out, a_in), 2)
     output, (h_n, c_n) = self.lstm(r_in)
     # perform prediction only at the end of the input sequence
     pred = self.fc(self.dropout(h_n[-1, :, :]))
     return pred
+
 
 def train_epoch(model, optimizer, loader, loss_func, epoch):
     """Train model for a single epoch.
@@ -524,7 +527,8 @@ def eval_model(model, loader) -> Tuple[torch.Tensor, torch.Tensor]:
             preds.append(y_hat)
             
     return torch.cat(obs), torch.cat(preds)
-        
+
+
 def calc_nse(obs: np.array, sim: np.array) -> float:
     """Calculate Nash-Sutcliff-Efficiency.
 
@@ -546,7 +550,8 @@ def calc_nse(obs: np.array, sim: np.array) -> float:
     nse_val = 1 - numerator / denominator
 
     return nse_val
-  
+
+
 def calc_persist_nse(obs: np.array, sim: np.array, lead ) -> float:
     """Calculate Nash-Sutcliff-Efficiency.
 
@@ -574,6 +579,7 @@ def calc_persist_nse(obs: np.array, sim: np.array, lead ) -> float:
 
     return persist_nse_val
 
+
 def calc_bias(obs: np.array, sim: np.array) -> float:
     """ Calculate bias
 
@@ -593,6 +599,7 @@ def calc_bias(obs: np.array, sim: np.array) -> float:
 
     return bias_95, bias_5, mean_bias
 
+
 def calc_maxdif(obs: np.array, sim: np.array) -> float:
     """ Calculate max difference in percent
 
@@ -604,6 +611,7 @@ def calc_maxdif(obs: np.array, sim: np.array) -> float:
     max_obs = np.nanmax(obs)
 
     return (max_sim-max_obs)/max_obs*100
+
 
 def calc_vol_qp(obs: np.array) -> float:
     """ Calculate volume [10^6 m^3] and peak discharge [m^3/s]
@@ -911,7 +919,7 @@ with plt.style.context('ggplot'):
   ax3.set_xlim([-sequence_length+1,0])
   ax3.set_xticks(txn)
 
-## This cell is for creating the raw data - no need to run this 
+# This cell is for creating the raw data - no need to run this
 start_date_pd = pd.to_datetime(datetime.datetime(DATA_START_DATE[0], DATA_START_DATE[1], DATA_START_DATE[2], 0, 0))
 end_date_pd = pd.to_datetime(datetime.datetime(DATA_END_DATE[0], DATA_END_DATE[1], DATA_END_DATE[2], 0, 0))
 date_range = pd.date_range(start_date_pd, end_date_pd)
@@ -923,6 +931,6 @@ data = np.zeros((num_days, num_features , h, w))
 for i, lat_i in enumerate(LAT_GRID):
   for j, lon_j in enumerate(LON_GRID):  
     x = get_geo_raw_data(lat_i, lon_j, start_date, end_date)
-    data[:,:, i, j] = x
+    data[:, :, i, j] = x
 out_path = PATH_ROOT + 'Data/'
-data.tofile(out_path+ "raw_data_fixed" + '_'.join([str(_) for _ in data.shape]))
+data.tofile(out_path + "raw_data_fixed" + '_'.join([str(_) for _ in data.shape]))

@@ -396,13 +396,14 @@ class CNN(nn.Module):
     # the input is: 1 or 2 or 3 (depending on the number of channels)
     # the output is: 16
     self.conv1 = nn.Conv2d(num_channels, 16, 3)
-    #
+    # doing max pooling to the output matrix of the previous stage (getting the max of the
+    # pool of 2 by 2 matrix going over the large matrix from previous stage)
     self.pool = nn.MaxPool2d(2, 2)
     # doing convolution with 3 by 3 filter matrix
     # the input is: 32
     # the output is: 16
     self.conv2 = nn.Conv2d(16, 32, 3)
-    # pay attention to the convolution (1024)!!!!! (comment of Ronen)
+    # pay attention to the convolution (1024)! (comment of Ronen, Efrat calculated this)
     self.fc1 = nn.Linear(1024, 120)
     self.fc2 = nn.Linear(120, input_size)
     self.dropout1 = nn.Dropout()
@@ -417,7 +418,7 @@ class CNN(nn.Module):
 
 
 class CNNLSTM(nn.Module):
-#  def __init__(self, input_size: int , hidden_size: int, num_channels: int, dropout_rate: float=0.0, num_layers: int=1, num_attributes: int=1):
+
   def __init__(self, input_size: int , hidden_size: int, num_channels: int, dropout_rate: float=0.0, num_layers: int=1, num_attributes: int=0):
     """Initialize model    
        :param hidden_size: Number of hidden units/LSTM cells

@@ -143,7 +143,11 @@ def create_basin_mask(basin, lat_grid, lon_grid):
 
 
 def get_basin_discharge(basin_name, start_date, end_date):
-    # Getting Discharge
+    # Getting Discharge (how much water are running through specific point / river in a given amount of time -
+    # usually cubic metre per second)
+    # ספיקה של נהר היא כמות המים הזורמת בנהר בזמן נתון (זהו מקרה פרטי של המונח הכללי
+    # ספיקה). מקובל למדוד את הספיקה במטר מעוקב לשנייה. נהר האמזונאס, שספיקתו היא הגדולה בעולם, מזרים כ-220 אלף קוב
+    # מים לשנייה בזמן שהוא גואה, ואילו הירדן, שהוא נהר קטן, מזרים לכנרת רק כ-16 קוב מים לשנייה.
     data_discharge = pd.read_csv(PATH_LABEL + DISCH_FORMAT.format(basin_name), header=None, delim_whitespace=True)
     idx_start, idx_end = get_index(data_discharge, start_date), get_index(data_discharge, end_date)
     y = np.array(data_discharge[3][idx_start:idx_end + 1])
@@ -200,7 +204,8 @@ def reshape_data_basins(x: np.ndarray, y: np.ndarray, seq_length: int, basin_lis
 class IMDGodavari(Dataset):
     """
     Torch Dataset for basic use of data from the data set.
-    This data set provides meteorological observations and discharge of a given basin from the IMD Godavari data set.
+    This data set provides meteorological observations and discharge
+    of a given basin from the IMD Godavari data set.
     """
 
     def __init__(self, all_data: np.array, basin_list: List, seq_length: int, period: str = None,
@@ -209,7 +214,9 @@ class IMDGodavari(Dataset):
                  mean_y=None, std_y=None):
         """Initialize Dataset containing the data of a single basin.
         :param basin_list: List of basins.
-        :param seq_length: Length of the time window of meteorological input provided for one time step of prediction.
+        :param seq_length: Length of the time window of meteorological
+        input provided for one time step of prediction.
+        (currently it's 30 - 30 days)
         :param period: (optional) One of ['train', 'eval']. None loads the entire time series.
         :param dates: (optional) List of the start and end date of the discharge period that is used.
         """
@@ -244,13 +251,25 @@ class IMDGodavari(Dataset):
         start_date, end_date = self.dates
         idx_s = get_index_by_date(start_date)[0]
         idx_e = get_index_by_date(end_date)[0]
-        # Data is reduced to the dates and featurs sub space.
+        # Data is reduced to the dates and features sub space.
+        # the features are the channels (3 features - precipitation,
+        # minimum temperature, maximum temperature)
         data = copy.deepcopy(all_data[idx_s:idx_e + 1, idx_features, :, :])
         time_span = data.shape[0]
         if self.period == 'train':
+            # axis = 0 - getting the minimum / maximum of first dimension
+            # ("rows", but here it's not really rows because it's a tensor and not a matrix)
+            # axis = 1 - getting the minimum / maximum of second dimension
+            # ("columns", but here it's not really columns because it's a tensor and not a matrix)
+
+            # specifically, here we are getting the minimum / maximum
+            # of all of the time stamps + H_LAT + W_LON per channel - i.e. - for all of the channels
+            # we are calculating the min / max over all the other dimensions.
             self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
-        # Normalizing the data
+        # Normalizing the data. There are two typical types of normalization:
+        # 1. (min - max normalization) - subtract the min and divide by (max - min)
+        # 2. (std - mean normalization) - subtract the mean and divide by the std
         for i in range(data.shape[1]):
             data[:, i, :] -= self.min_values[i]
             data[:, i, :] /= (self.max_values[i] - self.min_values[i])
@@ -280,7 +299,7 @@ class IMDGodavari(Dataset):
         # normalize data, reshape for LSTM training and remove invalid samples
         print(['1: ', x.shape, y.shape], 'Original size')
         x, y = reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
-        print(['2: ', x.shape, y.shape], 'After reshap and trimming sequnece and lead')
+        print(['2: ', x.shape, y.shape], 'After reshape and trimming sequenece and lead')
         x, y = self.get_monthly_data(x, y, start_date, end_date)
         print(['3: ', x.shape, y.shape], 'Monthly pick')
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
@@ -301,8 +320,10 @@ class IMDGodavari(Dataset):
         for j in range(x.shape[1]):
             x[:, j, mask] = self.mask_list[j]
         x_static_vec = (CATCHMENT_DICT[basin] - CATCHMENT_DICT['mean']) / CATCHMENT_DICT['std']
+        # for Efart! duplicating the static features to each of the input images
         x_static = np.repeat([x_static_vec], x.shape[0], axis=0)
         _, self.num_attributes = x_static.shape
+
         if self.include_static == False:
             self.num_attributes = 0
             x_static = None
@@ -410,19 +431,22 @@ class DNN(nn.Module):
 # convolution has 3 parameters:
 # 1. filter size - width X height (all filters are squared so it's actually a single number)
 # 2. stride size (how many pixels the filter is "jumping" at each iteration through the input image)
-# 3. number of filters (also called channels as this is the number of input channels - each
+# 3. number of filters (also called channels as this is the number of output channels - each
 # filter is producing *one* channel)
 class CNN(nn.Module):
     def __init__(self, num_channels: int, input_size: int):
         super(CNN, self).__init__()
         # doing convolution with 3 by 3 filter matrix
-        # the input is: 1 or 2 or 3 channels (depending on the number of channels)
+        # the input is: 1 or 2 or 3 channels (depending on the number of channels) -
+        # this is the number of channel of the input image
         # the output is: 16 channels (the number of filters we apply)
         self.conv1 = nn.Conv2d(num_channels, 16, 3)
-        # doing max pooling to the output matrix of the previous stage (getting the max of the
-        # pool of 2 by 2 matrix going over the large matrix from previous stage)
+        # doing max pooling to the output matrix of the previous stage
+        # (getting the max of the pool of 2 by 2 matrix going
+        # over the large matrix from previous stage)
         self.pool = nn.MaxPool2d(2, 2)
-        # doing convolution with 3 by 3 filter matrix
+        # doing convolution with 3 by 3 filter matrix -
+        # (this is the number of channel of the input image)
         # the input is: 16 channels
         # the output is: 32 channels (the number of filters we apply)
         self.conv2 = nn.Conv2d(16, 32, 3)
@@ -678,7 +702,9 @@ num_hidden_units = 128
 
 ### Choose features ###
 use_perc = True
+# maximum temprature in a given day
 use_t_max = False
+# minimum temprature in a given day
 use_t_min = False
 idx_features = [use_perc, use_t_max, use_t_min]
 ### Choose basin ### 
@@ -724,13 +750,20 @@ test_loader = DataLoader(ds_test, batch_size=2048, shuffle=False)
 #########################
 
 # Here we create our model
+# attributes == static features
 num_attributes = CATCHMENT_DICT['Tekra'].size
+
 if INCLUDE_STATIC == False:
     num_attributes = 0
+
+# idx_features - number of channels (1,2,3)
 input_size = (sum(idx_features) * W_LON * H_LAT + num_attributes) * sequence_length
 model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
-                dropout_rate=dropout_rate, num_channels=sum(idx_features), num_attributes=num_attributes).to(device)
-# model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers, num_hidden_units=num_hidden_units, dropout_rate=dropout_rate).to(device)
+                dropout_rate=dropout_rate, num_channels=sum(idx_features),
+                num_attributes=num_attributes).to(device)
+# model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,
+# num_hidden_units=num_hidden_units,
+# dropout_rate=dropout_rate).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 loss_func = nn.MSELoss()
 

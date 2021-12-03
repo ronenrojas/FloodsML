@@ -10,6 +10,7 @@ Original file is located at
 #### IMPORTS  ####
 from pathlib import Path
 from typing import Tuple, List
+from typing import Tuple, List
 import matplotlib.pyplot as plt
 from numba import njit
 import numpy as np
@@ -181,7 +182,6 @@ def reshape_data_basins(x: np.ndarray, y: np.ndarray, seq_length: int, basin_lis
     :param x: Matrix containing input features column wise and time steps row wise
     :param y: Matrix containing the output feature.
     :param seq_length: Length of look back days for one day of prediction
-    :param seq_length: Length of look back days for one day of prediction
     :return: Two np.ndarrays, the first of shape (samples, length of sequence,
       number of features), containing the input data for the LSTM. The second
       of shape (samples, 1) containing the expected output for each input
@@ -261,15 +261,15 @@ class IMDGodavari(Dataset):
             # ("rows", but here it's not really rows because it's a tensor and not a matrix)
             # axis = 1 - getting the minimum / maximum of second dimension
             # ("columns", but here it's not really columns because it's a tensor and not a matrix)
+            # Normalizing the data. There are two typical types of normalization:
+            # 1. (min - max normalization) - subtract the min and divide by (max - min)
+            # 2. (std - mean normalization) - subtract the mean and divide by the std
 
             # specifically, here we are getting the minimum / maximum
             # of all of the time stamps + H_LAT + W_LON per channel - i.e. - for all of the channels
             # we are calculating the min / max over all the other dimensions.
             self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
-        # Normalizing the data. There are two typical types of normalization:
-        # 1. (min - max normalization) - subtract the min and divide by (max - min)
-        # 2. (std - mean normalization) - subtract the mean and divide by the std
         for i in range(data.shape[1]):
             data[:, i, :] -= self.min_values[i]
             data[:, i, :] /= (self.max_values[i] - self.min_values[i])
@@ -374,9 +374,9 @@ class IMDGodavari(Dataset):
             # Rescaling the label
             if self.period == 'train':
                 y = self.local_rescale(y, 'output')
-            # gettig the months for each date
+            # getting the months for each date
             date_months = get_months_by_dates(start_date, end_date)
-            # Adjusting for sequnence length and lead
+            # Adjusting for sequence length and lead
             date_months = date_months[(self.seq_length + self.lead - 1):]
             n_samples_per_basin = int(len(y) / len(self.basin_list))
             ind_date_months = [i for i in range(0, n_samples_per_basin) if date_months[i] in self.months]
@@ -725,9 +725,14 @@ end_date = (2009, 12, 31)
 months_lst = [6, 7, 8, 9, 10]
 
 print('Train dataset\n===============================')
-# ds_train = IMDGodavari(all_data, basin_list=basin_list, seq_length=sequence_length, period="train", dates=[start_date, end_date], idx= idx_features, lead=lead)
-ds_train = IMDGodavari(all_data, basin_list=basin_list, seq_length=sequence_length, period="train",
-                       dates=[start_date, end_date], months=months_lst, idx=idx_features, lead=lead,
+ds_train = IMDGodavari(all_data,
+                       basin_list=basin_list,
+                       seq_length=sequence_length,
+                       period="train",
+                       dates=[start_date, end_date],
+                       months=months_lst,
+                       idx=idx_features,
+                       lead=lead,
                        include_static=INCLUDE_STATIC)
 tr_loader = DataLoader(ds_train, batch_size=64, shuffle=True)
 
@@ -737,10 +742,15 @@ tr_loader = DataLoader(ds_train, batch_size=64, shuffle=True)
 start_date = (2000, 1, 1)
 end_date = (2009, 12, 31)
 print('\nTest dataset\n===============================')
-# ds_test = IMDGodavari(all_data, basin_list, seq_length=sequence_length, period="eval", dates=[start_date, end_date], idx= idx_features, lead=lead, min_values=ds_train.get_min(), max_values=ds_train.get_max(), include_static=True)
-ds_test = IMDGodavari(all_data, basin_list, seq_length=sequence_length, period="eval",
-                      dates=[start_date, end_date], months=months_lst, idx=idx_features, lead=lead,
-                      min_values=ds_train.get_min(), max_values=ds_train.get_max(), mean_y=ds_train.get_mean_y(),
+ds_test = IMDGodavari(all_data, basin_list,
+                      seq_length=sequence_length,
+                      period="eval",
+                      dates=[start_date, end_date],
+                      months=months_lst,
+                      idx=idx_features, lead=lead,
+                      min_values=ds_train.get_min(),
+                      max_values=ds_train.get_max(),
+                      mean_y=ds_train.get_mean_y(),
                       std_y=ds_train.get_std_y(),
                       include_static=INCLUDE_STATIC)
 test_loader = DataLoader(ds_test, batch_size=2048, shuffle=False)
@@ -753,10 +763,10 @@ test_loader = DataLoader(ds_test, batch_size=2048, shuffle=False)
 # attributes == static features
 num_attributes = CATCHMENT_DICT['Tekra'].size
 
-if INCLUDE_STATIC == False:
+if not INCLUDE_STATIC:
     num_attributes = 0
 
-# idx_features - number of channels (1,2,3)
+# idx_features - a True / False list over the 3 features (channels) of each "image"
 input_size = (sum(idx_features) * W_LON * H_LAT + num_attributes) * sequence_length
 model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
                 dropout_rate=dropout_rate, num_channels=sum(idx_features),
@@ -807,10 +817,17 @@ end_date = (2014, 12, 31)
 months_lst = [6, 7, 8, 9, 10]
 
 Validation_basin = ["Tekra"]
-# ds_val = IMDGodavari(all_data, basin_list=Validation_basin, seq_length=sequence_length, period="eval", dates=[start_date, end_date], idx= idx_features, lead=lead, min_values=ds_train.get_min(), max_values=ds_train.get_max())
-ds_val = IMDGodavari(all_data, basin_list=Validation_basin, seq_length=sequence_length, period="eval",
-                     dates=[start_date, end_date], months=months_lst, idx=idx_features, lead=lead,
-                     min_values=ds_train.get_min(), max_values=ds_train.get_max(), mean_y=ds_train.get_mean_y(),
+ds_val = IMDGodavari(all_data,
+                     basin_list=Validation_basin,
+                     seq_length=sequence_length,
+                     period="eval",
+                     dates=[start_date, end_date],
+                     months=months_lst,
+                     idx=idx_features,
+                     lead=lead,
+                     min_values=ds_train.get_min(),
+                     max_values=ds_train.get_max(),
+                     mean_y=ds_train.get_mean_y(),
                      std_y=ds_train.get_std_y(),
                      include_static=INCLUDE_STATIC)
 val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)

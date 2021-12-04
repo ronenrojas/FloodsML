@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     dream_sim = Dream(param_file="Dream/Par.csv")
-    dream_sim.read_input("Data/Data.csv")
+    dream_sim.read_input("Dream/Data/synth_data_1.csv")
     dream_sim.simulate()
     dream_sim.plot()
-    #dream_sim.out_to_csv("rundir/output.csv")
+    dream_sim.out_to_csv("Dream/rundir/output_data_1.csv")
     """
     sac = SacSma(param_file="SAC_SMA\\C\\par_update.in")
     sac.read_input("Data/Data.csv")

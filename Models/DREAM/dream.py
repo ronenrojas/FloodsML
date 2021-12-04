@@ -90,9 +90,9 @@ class Dream:
                 theta = theta - aet[ind] / par_z
         UHL = 20
         dt = 3600*24
-        UHk = 1 * 3600 * 24
-        UHn = 3
-        UHtr = 0
+        UHk = 1 * 3600 * 24 #  Bigger n bigger basin
+        UHn = 3  #  Bigger n bigger basin
+        UHtr = 0 # Offset in time - 1 -
         UH = synthetic_uh(dt, UHk, UHn, UHtr, UHL)
         output_dict['runoff_before'] = runoff
         output_dict['UH'] = UH
@@ -104,15 +104,22 @@ class Dream:
         self.set_output(output_dict)
 
     def plot(self):
-        precip = self.output_dict["UH"]
+        precip = self.input_dict["precip"]
+        unit_hodograph = self.output_dict["UH"]
         runoff = self.output_dict["runoff"]
         runoff_before = self.output_dict['runoff_before']
-        plt.plot(precip, 'b')
-        plt.plot(runoff, 'g')
-        plt.plot(runoff_before, 'k')
-        plt.xlabel('Day')
-        plt.ylabel('Precipitation / runoff (mm/day)')
+        fig, axs = plt.subplots(3)
+        fig.suptitle('Dreams')
+        axs[0].plot(precip, 'b')
+        plt.ylabel('Precipitation')
+        axs[1].plot(runoff, 'g')
+        axs[1].plot(runoff_before, 'k')
         plt.legend(["Precipitation", "runoff", "runoff before"])
+        plt.ylabel('Precipitation / runoff (mm/day)')
+        plt.xlabel('Day')
+        axs[2].plot(unit_hodograph)
+        plt.ylabel('UH')
+        plt.xlabel('Day')
         plt.show()
 
     def to_SAC_SMA(self, file_name):

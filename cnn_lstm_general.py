@@ -43,8 +43,8 @@ LAT_GRID = np.arange(LAT_MIN, LAT_MAX + GRID_DELTA / 2, GRID_DELTA)
 LON_GRID = np.arange(LON_MIN, LON_MAX + GRID_DELTA / 2, GRID_DELTA)
 DATA_LEN = 17532
 NUM_CHANNELS = 3
-H_LAT = len(LAT_GRID)
-W_LON = len(LON_GRID)
+LAT = len(LAT_GRID)
+LON = len(LON_GRID)
 DATA_START_DATE = (1967, 1, 1)
 DATA_END_DATE = (2014, 12, 31)
 
@@ -480,20 +480,20 @@ class CNNLSTM(nn.Module):
         batch_size, time_steps, _ = x.size()
         # getting the "image" part of the input
         # (removing the last 4 static features)
-        image = x[:, :, :self.num_channels * H_LAT * W_LON]
+        image = x[:, :, :self.num_channels * LAT * LON]
         # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT*W_LON)
-        image = image.view(batch_size, time_steps, self.num_channels, H_LAT * W_LON)
+        image = image.view(batch_size, time_steps, self.num_channels, LAT * LON)
         # reshaping the image to 5 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT, W_LON)
-        image = image.view(batch_size, time_steps, self.num_channels, H_LAT, W_LON)
+        image = image.view(batch_size, time_steps, self.num_channels, LAT, LON)
         # reshaping the image to 4 dimensional tensor of (batch_size * time_steps, num_channles, H_LAT, W_LON)
-        c_in = image.view(batch_size * time_steps, self.num_channels, H_LAT, W_LON)
+        c_in = image.view(batch_size * time_steps, self.num_channels, LAT, LON)
         # CNN part
         c_out = self.cnn(c_in)
         # CNN output should be in the size of (input size - attributes_size)
         cnn_out = c_out.view(batch_size, time_steps, -1)
         # getting the "non-image" part of the input (last 4 attributes)
         # (removing the "image" part)
-        a_in = x[:, :, self.num_channels * H_LAT * W_LON:]
+        a_in = x[:, :, self.num_channels * LAT * LON:]
         r_in = torch.cat((cnn_out, a_in), 2)
         output, (h_n, c_n) = self.lstm(r_in)
         # perform prediction only at the end of the input sequence
@@ -664,19 +664,23 @@ def convert_to_number(number):
     except Exception:
         return None
 
+
 # Latitude - Width
 # Longitude - Height
-def reshape_data_by_lat_lon_file(data_file_path, dims_file_path):
-    f = open('data.json')
+def reshape_data_by_lat_lon_file(data_file_path, dims_json_file_path):
+    f = open(dims_file_path)
     dims_json = json.load(f)
-    if dims_json
-    dims_json["H_LAT"]
-    dims_json["W_LON"]
-    data = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS, H_LAT, W_LON))
-    return data
+    if "LAT" in dims_json.keys() and "LON" in dims_json.keys():
+        lat = dims_json["H_LAT"]
+        lon = dims_json["W_LON"]
+    else:
+        lat = LAT
+        lon = LON
+    data_ret = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS, lat, lon))
+    return data_ret, lat, lon
 
-all_data = reshape_data_by_lat_lon_file(DATA_)
 
+all_data = reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -769,7 +773,7 @@ if not INCLUDE_STATIC:
     num_attributes = 0
 
 # idx_features - a True / False list over the 3 features (channels) of each "image"
-input_size = (sum(idx_features) * W_LON * H_LAT + num_attributes) * sequence_length
+input_size = (sum(idx_features) * LON * LAT + num_attributes) * sequence_length
 model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
                 dropout_rate=dropout_rate, num_channels=sum(idx_features),
                 num_attributes=num_attributes).to(device)
@@ -895,10 +899,10 @@ integ_grad = np.squeeze(integ_grad)
 integ_grad /= len(idx)
 _ = model.cuda()
 
-image_grad = integ_grad[:, :H_LAT * W_LON].reshape((sequence_length, H_LAT, W_LON))
+image_grad = integ_grad[:, :LAT * LON].reshape((sequence_length, LAT, LON))
 time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
 spatial_image_grad = np.sum(image_grad, axis=0)
-atrrib_grade = integ_grad[:, H_LAT * W_LON:]
+atrrib_grade = integ_grad[:, LAT * LON:]
 
 # Calculate Integrated Gradients by quantile
 
@@ -928,10 +932,10 @@ integ_grad = np.squeeze(integ_grad)
 integ_grad /= len(idx)
 _ = model.cuda()
 
-image_grad = integ_grad[:, :H_LAT * W_LON].reshape((sequence_length, H_LAT, W_LON))
+image_grad = integ_grad[:, :LAT * LON].reshape((sequence_length, LAT, LON))
 time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
 spatial_image_grad = np.sum(image_grad, axis=0)
-atrrib_grade = integ_grad[:, H_LAT * W_LON:]
+atrrib_grade = integ_grad[:, LAT * LON:]
 
 # integ_file = PATH_ROOT + "Out/integ_grad_2000_2014"
 # np.save(file=integ_file, arr=integ_grad)

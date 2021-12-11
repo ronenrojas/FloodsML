@@ -19,6 +19,7 @@ import os
 import copy
 import matplotlib.dates as mdates
 import json
+from LSTM import CNNLSTM
 
 parent_dir = str(Path(os.getcwd()))
 
@@ -26,6 +27,7 @@ RUN_LOCALLY = True
 
 PATH_ROOT = parent_dir + "/"  # Change only here the path
 PATH_DATA_FILE = parent_dir + str(Path("/" + "Data/raw_data_fixed_17532_3_22_38"))
+DIMS_JSON_FILE_PATH = parent_dir + "./dims_json.json"
 PATH_LABEL = PATH_ROOT + "Data/CWC/"
 PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"
@@ -43,8 +45,8 @@ LAT_GRID = np.arange(LAT_MIN, LAT_MAX + GRID_DELTA / 2, GRID_DELTA)
 LON_GRID = np.arange(LON_MIN, LON_MAX + GRID_DELTA / 2, GRID_DELTA)
 DATA_LEN = 17532
 NUM_CHANNELS = 3
-LAT = len(LAT_GRID)
-LON = len(LON_GRID)
+DEFAULT_LAT = len(LAT_GRID)
+DEFAULT_LON = len(LON_GRID)
 DATA_START_DATE = (1967, 1, 1)
 DATA_END_DATE = (2014, 12, 31)
 
@@ -411,96 +413,6 @@ class DNN(nn.Module):
         return pred
 
 
-# convolution has 3 parameters:
-# 1. filter size - width X height (all filters are squared, so it's actually a single number)
-# 2. stride size (how many pixels the filter is "jumping" at each iteration through the input image)
-# 3. number of filters (also called channels as this is the number of output channels - each
-# filter is producing *one* channel)
-class CNN(nn.Module):
-    def __init__(self, num_channels: int, input_size: int):
-        super(CNN, self).__init__()
-        # doing convolution with 3 by 3 filter matrix
-        # the input is: 1 or 2 or 3 channels (depending on the number of channels) -
-        # this is the number of channel of the input image
-        # the output is: 16 channels (the number of filters we apply)
-        self.conv1 = nn.Conv2d(num_channels, 16, 3)
-        # doing max pooling to the output matrix of the previous stage
-        # (getting the max of the pool of 2 by 2 matrix going
-        # over the large matrix from previous stage)
-        self.pool = nn.MaxPool2d(2, 2)
-        # doing convolution with 3 by 3 filter matrix -
-        # (this is the number of channel of the input image)
-        # the input is: 16 channels
-        # the output is: 32 channels (the number of filters we apply)
-        self.conv2 = nn.Conv2d(16, 32, 3)
-        # pay attention to the convolution (1024)! (comment of Ronen, Efrat calculated this)
-        self.fc1 = nn.Linear(1024, 120)
-        self.fc2 = nn.Linear(120, input_size)
-        self.dropout1 = nn.Dropout()
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 1024)
-        x = self.dropout1(F.relu(self.fc1(x)))
-        x = self.fc2(x)
-        return x
-
-
-class CNNLSTM(nn.Module):
-
-    def __init__(self, input_size: int, hidden_size: int, num_channels: int, dropout_rate: float = 0.0,
-                 num_layers: int = 1, num_attributes: int = 0):
-        """Initialize model
-           :param hidden_size: Number of hidden units/LSTM cells
-          :param dropout_rate: Dropout rate of the last fully connected layer. Default 0.0
-        """
-        super(CNNLSTM, self).__init__()
-        self.hidden_size = hidden_size
-        self.dropout_rate = dropout_rate
-        self.num_channels = num_channels
-        self.cnn = CNN(num_channels=num_channels, input_size=(input_size - num_attributes))
-        # create required layer
-        self.lstm = nn.LSTM(input_size=input_size, hidden_size=self.hidden_size, num_layers=num_layers, bias=True,
-                            batch_first=True)
-        self.dropout = nn.Dropout(p=self.dropout_rate)
-        self.fc = nn.Linear(in_features=self.hidden_size, out_features=1)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the Network.
-          param x: Tensor of shape [batch size, seq length, num features] containing the input data for the LSTM network.
-          :return: Tensor containing the network predictions
-        """
-        # x is of size:
-        # 1. batch_size (some sample of all the training set)
-        # 2. times_steps - the length of the sequence (for example 30, if we are talking about one month)
-        # 3. (num_channels*H_LAT*W_LON + 4)
-        # the 4 is for the 4 static features
-        # for example, currently, x.size() is - (64, 30, 840)
-        batch_size, time_steps, _ = x.size()
-        # getting the "image" part of the input
-        # (removing the last 4 static features)
-        image = x[:, :, :self.num_channels * LAT * LON]
-        # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT*W_LON)
-        image = image.view(batch_size, time_steps, self.num_channels, LAT * LON)
-        # reshaping the image to 5 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT, W_LON)
-        image = image.view(batch_size, time_steps, self.num_channels, LAT, LON)
-        # reshaping the image to 4 dimensional tensor of (batch_size * time_steps, num_channles, H_LAT, W_LON)
-        c_in = image.view(batch_size * time_steps, self.num_channels, LAT, LON)
-        # CNN part
-        c_out = self.cnn(c_in)
-        # CNN output should be in the size of (input size - attributes_size)
-        cnn_out = c_out.view(batch_size, time_steps, -1)
-        # getting the "non-image" part of the input (last 4 attributes)
-        # (removing the "image" part)
-        a_in = x[:, :, self.num_channels * LAT * LON:]
-        r_in = torch.cat((cnn_out, a_in), 2)
-        output, (h_n, c_n) = self.lstm(r_in)
-        # perform prediction only at the end of the input sequence
-        pred = self.fc(self.dropout(h_n[-1, :, :]))
-        return pred
-
-
 def train_epoch(model, optimizer, loader, loss_func, epoch):
     """Train model for a single epoch.
 
@@ -668,19 +580,21 @@ def convert_to_number(number):
 # Latitude - Width
 # Longitude - Height
 def reshape_data_by_lat_lon_file(data_file_path, dims_json_file_path):
-    f = open(dims_file_path)
-    dims_json = json.load(f)
-    if "LAT" in dims_json.keys() and "LON" in dims_json.keys():
-        lat = dims_json["H_LAT"]
-        lon = dims_json["W_LON"]
-    else:
-        lat = LAT
-        lon = LON
+    f = open(dims_json_file_path)
+    dims_json_all = json.load(f)
+    lat = DEFAULT_LAT
+    lon = DEFAULT_LON
+    if data_file_path in dims_json_all.keys():
+        dims_json = dims_json_all[data_file_path]
+        if "Lat" in dims_json.keys():
+            lat = dims_json["Lat"]
+        if "Lon" in dims_json.keys():
+            lon = dims_json["Lon"]
     data_ret = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS, lat, lon))
     return data_ret, lat, lon
 
 
-all_data = reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
+all_data, LAT, LON = reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -773,10 +687,11 @@ if not INCLUDE_STATIC:
     num_attributes = 0
 
 # idx_features - a True / False list over the 3 features (channels) of each "image"
-input_size = (sum(idx_features) * LON * LAT + num_attributes) * sequence_length
+input_size = (sum(idx_features) * DEFAULT_LON * DEFAULT_LAT + num_attributes) * sequence_length
+input_image_size = (sum(idx_features), LAT, LON)
 model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
                 dropout_rate=dropout_rate, num_channels=sum(idx_features),
-                num_attributes=num_attributes).to(device)
+                num_attributes=num_attributes, imgae_imgae_size=input_image_size).to(device)
 # model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,
 # num_hidden_units=num_hidden_units,
 # dropout_rate=dropout_rate).to(device)
@@ -899,10 +814,10 @@ integ_grad = np.squeeze(integ_grad)
 integ_grad /= len(idx)
 _ = model.cuda()
 
-image_grad = integ_grad[:, :LAT * LON].reshape((sequence_length, LAT, LON))
+image_grad = integ_grad[:, :DEFAULT_LAT * DEFAULT_LON].reshape((sequence_length, DEFAULT_LAT, DEFAULT_LON))
 time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
 spatial_image_grad = np.sum(image_grad, axis=0)
-atrrib_grade = integ_grad[:, LAT * LON:]
+atrrib_grade = integ_grad[:, DEFAULT_LAT * DEFAULT_LON:]
 
 # Calculate Integrated Gradients by quantile
 
@@ -932,10 +847,10 @@ integ_grad = np.squeeze(integ_grad)
 integ_grad /= len(idx)
 _ = model.cuda()
 
-image_grad = integ_grad[:, :LAT * LON].reshape((sequence_length, LAT, LON))
+image_grad = integ_grad[:, :DEFAULT_LAT * DEFAULT_LON].reshape((sequence_length, DEFAULT_LAT, DEFAULT_LON))
 time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
 spatial_image_grad = np.sum(image_grad, axis=0)
-atrrib_grade = integ_grad[:, LAT * LON:]
+atrrib_grade = integ_grad[:, DEFAULT_LAT * DEFAULT_LON:]
 
 # integ_file = PATH_ROOT + "Out/integ_grad_2000_2014"
 # np.save(file=integ_file, arr=integ_grad)

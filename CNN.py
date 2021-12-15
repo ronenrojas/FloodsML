@@ -36,7 +36,7 @@ class CNN(nn.Module):
         self.conv2 = nn.Conv2d(16, 32, 3)
         # pay attention to the convolution (1024)! (comment of Ronen, Efrat calculated this)
         size_for_fc = dims_fc[0] * dims_fc[1] * 32
-        size_for_fc = int(size_for_fc)
+        self.size_for_fc = int(size_for_fc)
         self.fc1 = nn.Linear(size_for_fc, 120)
         self.fc2 = nn.Linear(120, output_size_cnn)
         self.dropout1 = nn.Dropout()
@@ -44,7 +44,7 @@ class CNN(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 1024)
+        x = x.view(-1, self.size_for_fc)
         x = self.dropout1(F.relu(self.fc1(x)))
         x = self.fc2(x)
         return x

@@ -673,7 +673,7 @@ def calc_vol_qp(obs: np.array) -> float:
 
     return vol, qp
 
-
+data_raw = np.fromfile(PATH_DATA_FILE)
 all_data = np.fromfile(PATH_DATA_FILE).reshape((DATA_LEN, NUM_CHANNELS, H_LAT, W_LON))
 
 # Number of GPUs available. Use 0 for CPU mode.

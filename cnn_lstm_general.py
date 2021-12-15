@@ -20,6 +20,8 @@ import copy
 import matplotlib.dates as mdates
 import json
 from LSTM import CNNLSTM
+from captum.attr import IntegratedGradients
+
 parent_dir = str(Path(os.getcwd()))
 
 RUN_LOCALLY = True
@@ -35,6 +37,7 @@ DISCH_FORMAT = "CWC_discharge_{0}_clean"
 PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
 FILE_FORMAT = "data_{0}_{1}"
 
+# Lat - width, Lon - height
 LAT_MIN = 17.375
 LAT_MAX = 22.625
 LON_MIN = 73.625
@@ -52,7 +55,8 @@ DATA_END_DATE = (2014, 12, 31)
 
 def get_index(data, date_input):
     year, month, day = date_input
-    return int(np.where(np.array(data[0] == year) * np.array(data[1] == month) * np.array(data[2] == day))[0].squeeze())
+    return int(np.where(np.array(data[0] == year) * np.array(data[1] == month)
+                        * np.array(data[2] == day))[0].squeeze())
 
 
 def get_geo_raw_data(lat, lon, start_date, end_date):
@@ -579,24 +583,25 @@ def convert_to_number(number):
 # Latitude - Width
 # Longitude - Height
 def reshape_data_by_lat_lon_file(data_file_path, dims_json_file_path):
-    lat = DEFAULT_LAT
-    lon = DEFAULT_LON
+    image_width = DEFAULT_LAT
+    image_height = DEFAULT_LON
     try:
         f = open(dims_json_file_path)
         dims_json_all = json.load(f)
         if data_file_path in dims_json_all.keys():
             dims_json = dims_json_all[data_file_path]
-            if "Lat" in dims_json.keys():
-                lat = dims_json["Lat"]
-            if "Lon" in dims_json.keys():
-                lon = dims_json["Lon"]
+            if "width" in dims_json.keys():
+                image_width = dims_json["width"]
+            if "height" in dims_json.keys():
+                image_height = dims_json["height"]
     except Exception as e:
         print("There was an exception in reading the dims file: {}".format(e))
-    data_ret = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS, lat, lon))
-    return data_ret, lat, lon
+    data_ret = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS,
+                                                    image_width, image_height))
+    return data_ret, image_width, image_height
 
 
-all_data, LAT, LON = reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
+all_data, image_width, image_height = reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -690,8 +695,8 @@ if not INCLUDE_STATIC:
 
 # idx_features - a True / False list over the 3 features (channels) of each "image"
 input_size = (sum(idx_features) * DEFAULT_LON * DEFAULT_LAT + num_attributes) * sequence_length
-input_image_size = (sum(idx_features), LAT, LON)
-model = CNNLSTM(lat=LAT, lon=LON, input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
+input_image_size = (sum(idx_features), image_width, image_height)
+model = CNNLSTM(lat=image_width, lon=image_height, input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
                 dropout_rate=dropout_rate, num_channels=sum(idx_features),
                 num_attributes=num_attributes, image_input_size=input_image_size).to(device)
 # model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,
@@ -781,7 +786,8 @@ ax.plot(date_range, obs, label="observation")
 ax.plot(date_range, preds, label="prediction")
 ax.legend()
 ax.set_title(
-    f"Basin {Validation_basin} - Validation set NSE: {nse:.3f}, 95bias: {pb95:.1f}, 5bias: {pb5:.3f} ,total bias : {total_b: .1f}%")
+    f"Basin {Validation_basin} - Validation set NSE: {nse:.3f}, "
+    f"95bias: {pb95:.1f}, 5bias: {pb5:.3f} ,total bias : {total_b: .1f}%")
 ax.xaxis.set_tick_params(rotation=90)
 ax.xaxis.set_major_locator(mdates.MonthLocator(interval=4))
 ax.set_xlabel("Date")
@@ -789,10 +795,6 @@ ax.grid('on')
 _ = ax.set_ylabel("Discharge (mm/d)")
 
 """# Integrated gradients"""
-
-# Install package
-from captum.attr import IntegratedGradients
-
 # Calculate Integrated Gradients
 # path_to_ckpt = last_model_path
 # path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'

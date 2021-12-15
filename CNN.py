@@ -36,6 +36,7 @@ class CNN(nn.Module):
         self.conv2 = nn.Conv2d(16, 32, 3)
         # pay attention to the convolution (1024)! (comment of Ronen, Efrat calculated this)
         size_for_fc = dims_fc[0] * dims_fc[1] * 32
+        size_for_fc = int(size_for_fc)
         self.fc1 = nn.Linear(size_for_fc, 120)
         self.fc2 = nn.Linear(120, output_size_cnn)
         self.dropout1 = nn.Dropout()
@@ -63,12 +64,12 @@ class CNN(nn.Module):
     def calc_dims_after_all_conv_op(self, input_image_shape: [int], ops_list: [str]):
         image_dims = (input_image_shape[1], input_image_shape[2])
         for op in ops_list:
-            if op == "conv":
+            if op[0] == "conv":
                 image_dims = CNN.calc_dims_after_filter(image_dims,
                                                         self.filter_size_conv,
                                                         self.stride_size_conv)
-            elif op == "pool":
+            elif op[0] == "pool":
                 image_dims = CNN.calc_dims_after_filter(image_dims,
-                                                        self.filter_size_conv,
-                                                        self.stride_size_conv)
+                                                        self.filter_size_pool,
+                                                        self.stride_size_pool)
         return image_dims

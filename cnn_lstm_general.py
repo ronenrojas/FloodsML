@@ -20,7 +20,6 @@ import copy
 import matplotlib.dates as mdates
 import json
 from LSTM import CNNLSTM
-
 parent_dir = str(Path(os.getcwd()))
 
 RUN_LOCALLY = True
@@ -580,16 +579,19 @@ def convert_to_number(number):
 # Latitude - Width
 # Longitude - Height
 def reshape_data_by_lat_lon_file(data_file_path, dims_json_file_path):
-    f = open(dims_json_file_path)
-    dims_json_all = json.load(f)
     lat = DEFAULT_LAT
     lon = DEFAULT_LON
-    if data_file_path in dims_json_all.keys():
-        dims_json = dims_json_all[data_file_path]
-        if "Lat" in dims_json.keys():
-            lat = dims_json["Lat"]
-        if "Lon" in dims_json.keys():
-            lon = dims_json["Lon"]
+    try:
+        f = open(dims_json_file_path)
+        dims_json_all = json.load(f)
+        if data_file_path in dims_json_all.keys():
+            dims_json = dims_json_all[data_file_path]
+            if "Lat" in dims_json.keys():
+                lat = dims_json["Lat"]
+            if "Lon" in dims_json.keys():
+                lon = dims_json["Lon"]
+    except Exception as e:
+        print("There was an exception in reading the dims file: {}".format(e))
     data_ret = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS, lat, lon))
     return data_ret, lat, lon
 
@@ -689,9 +691,9 @@ if not INCLUDE_STATIC:
 # idx_features - a True / False list over the 3 features (channels) of each "image"
 input_size = (sum(idx_features) * DEFAULT_LON * DEFAULT_LAT + num_attributes) * sequence_length
 input_image_size = (sum(idx_features), LAT, LON)
-model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
+model = CNNLSTM(lat=LAT, lon=LON, input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
                 dropout_rate=dropout_rate, num_channels=sum(idx_features),
-                num_attributes=num_attributes, imgae_imgae_size=input_image_size).to(device)
+                num_attributes=num_attributes, image_input_size=input_image_size).to(device)
 # model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,
 # num_hidden_units=num_hidden_units,
 # dropout_rate=dropout_rate).to(device)

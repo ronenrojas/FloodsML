@@ -1,18 +1,19 @@
 import torch
 import torch.nn as nn
 from CNN import CNN
-from cnn_lstm_general import LAT, LON
 
 
 class CNNLSTM(nn.Module):
 
-    def __init__(self, input_size: int, hidden_size: int, num_channels: int, dropout_rate: float = 0.0,
+    def __init__(self, lat, lon, input_size: int, hidden_size: int, num_channels: int, dropout_rate: float = 0.0,
                  num_layers: int = 1, num_attributes: int = 0, image_input_size=(int,)):
         """Initialize model
            :param hidden_size: Number of hidden units/LSTM cells
           :param dropout_rate: Dropout rate of the last fully connected layer. Default 0.0
         """
         super(CNNLSTM, self).__init__()
+        self.lat = lat
+        self.lon = lon
         self.hidden_size = hidden_size
         self.dropout_rate = dropout_rate
         self.num_channels = num_channels
@@ -38,20 +39,20 @@ class CNNLSTM(nn.Module):
         batch_size, time_steps, _ = x.size()
         # getting the "image" part of the input
         # (removing the last 4 static features)
-        image = x[:, :, :self.num_channels * LAT * LON]
+        image = x[:, :, :self.num_channels * self.lat * self.lon]
         # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT*W_LON)
-        image = image.view(batch_size, time_steps, self.num_channels, LAT * LON)
+        image = image.view(batch_size, time_steps, self.num_channels, self.lat * self.lon)
         # reshaping the image to 5 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT, W_LON)
-        image = image.view(batch_size, time_steps, self.num_channels, LAT, LON)
+        image = image.view(batch_size, time_steps, self.num_channels, self.lat, self.lon)
         # reshaping the image to 4 dimensional tensor of (batch_size * time_steps, num_channles, H_LAT, W_LON)
-        c_in = image.view(batch_size * time_steps, self.num_channels, LAT, LON)
+        c_in = image.view(batch_size * time_steps, self.num_channels, self.lat, self.lon)
         # CNN part
         c_out = self.cnn(c_in)
         # CNN output should be in the size of (input size - attributes_size)
         cnn_out = c_out.view(batch_size, time_steps, -1)
         # getting the "non-image" part of the input (last 4 attributes)
         # (removing the "image" part)
-        a_in = x[:, :, self.num_channels * LAT * LON:]
+        a_in = x[:, :, self.num_channels * self.lat * self.lon:]
         r_in = torch.cat((cnn_out, a_in), 2)
         output, (h_n, c_n) = self.lstm(r_in)
         # perform prediction only at the end of the input sequence

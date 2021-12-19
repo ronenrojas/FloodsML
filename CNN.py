@@ -37,7 +37,7 @@ class CNN(nn.Module):
         # pay attention to the convolution (1024)! (comment of Ronen, Efrat calculated this)
         size_for_fc = dims_fc[0] * dims_fc[1] * 32
         self.size_for_fc = int(size_for_fc)
-        self.fc1 = nn.Linear(size_for_fc, 120)
+        self.fc1 = nn.Linear(self.size_for_fc, 120)
         self.fc2 = nn.Linear(120, output_size_cnn)
         self.dropout1 = nn.Dropout()
 

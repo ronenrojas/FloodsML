@@ -120,15 +120,34 @@ def get_index_all_data(date_in, lat, lon, lat_grid=LAT_GRID, lon_grid=LON_GRID, 
     return date_i, lat_i, lon_i
 
 
+"""
+generating the "image" basin from a larger "image" by mask:
+the lat_grid and lon_grid are two 1-d arrays that construct a matrix of points
+that depicting the bottom right corner of every "pixel" of the large area.
+from this large area, we are checking if the "pixels" of the basins smaller area
+are in this large area and creating a corresponding mask.
+The mask is in the size of the large area - 1 if this pixel in also in the basin's area,
+and 0 otherwise
+"""
+
+
 def create_basin_mask(basin, lat_grid, lon_grid):
+    # getting the grid describing the basin from file
     df = pd.read_csv(PATH_LOC.format(basin), header=None, delim_whitespace=True)
     basin_lat_lot = df.values
+    # lat_grid is an 1-d array that describing the horizontal lines of the rectangle
+    # surrounding the basin
     h = len(lat_grid)
+    # lon_grid is an 1-d array that describing the vertical lines of the rectangle
+    # surrounding the basin
     w = len(lon_grid)
-    idx_mat = np.ones((h, w), dtype=bool)
+    # initialize a matrix with all zeros
+    idx_mat = np.zeros((h, w), dtype=bool)
+    # for every pixel that is also in the basin area, set the indices of this pixel
+    # (bottom right corner of the pixel) in the large matrix to True
     for lat_lon_i in basin_lat_lot:
         i, j = get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], lat_grid, lon_grid)
-        idx_mat[i[0], j[0]] = False
+        idx_mat[i[0], j[0]] = True
     return idx_mat
 
 
@@ -305,8 +324,7 @@ class IMDGodavari(Dataset):
     def _get_basin_data(self, basin, data, start_date, end_date):
         mask = create_basin_mask(basin, LAT_GRID, LON_GRID)
         x = copy.deepcopy(data)
-        for j in range(x.shape[1]):
-            x[:, j, mask] = self.mask_list[j]
+        x = np.multiply(x, mask)
         x_static_vec = (CATCHMENT_DICT[basin] - CATCHMENT_DICT['mean']) / CATCHMENT_DICT['std']
         # for Efart! duplicating the static features to each of the input images
         x_static = np.repeat([x_static_vec], x.shape[0], axis=0)
@@ -696,7 +714,8 @@ if not INCLUDE_STATIC:
 # idx_features - a True / False list over the 3 features (channels) of each "image"
 input_size = (sum(idx_features) * DEFAULT_LON * DEFAULT_LAT + num_attributes) * sequence_length
 input_image_size = (sum(idx_features), image_width, image_height)
-model = CNNLSTM(lat=image_width, lon=image_height, input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
+model = CNNLSTM(lat=image_width, lon=image_height, input_size=cnn_outputsize, num_layers=num_layers,
+                hidden_size=hidden_size,
                 dropout_rate=dropout_rate, num_channels=sum(idx_features),
                 num_attributes=num_attributes, image_input_size=input_image_size).to(device)
 # model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,

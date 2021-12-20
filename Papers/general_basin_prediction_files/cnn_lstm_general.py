@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 import tqdm.notebook
 import tqdm
 import datetime
@@ -16,11 +15,12 @@ import pathlib
 import pytz
 import seaborn as sns
 import os
-import copy
 import matplotlib.dates as mdates
 import json
 from LSTM import CNNLSTM
 from captum.attr import IntegratedGradients
+from preprocess_data import  import preprocess_data
+from Godavari import IMDGodavari
 
 parent_dir = str(Path(os.getcwd()))
 
@@ -51,387 +51,6 @@ DEFAULT_LAT = len(LAT_GRID)
 DEFAULT_LON = len(LON_GRID)
 DATA_START_DATE = (1967, 1, 1)
 DATA_END_DATE = (2014, 12, 31)
-
-
-def get_index(data, date_input):
-    year, month, day = date_input
-    return int(np.where(np.array(data[0] == year) * np.array(data[1] == month)
-                        * np.array(data[2] == day))[0].squeeze())
-
-
-def get_geo_raw_data(lat, lon, start_date, end_date):
-    # Getting data by lat lon coordinates
-    data = pd.read_csv(PATH_DATA_CLEAN + FILE_FORMAT.format(lat, lon), header=None, delim_whitespace=True)
-    idx_start, idx_end = get_index(data, start_date), get_index(data, end_date)
-    x = np.array(data[3][idx_start:idx_end + 1])
-    x = np.concatenate([[x], [np.array(data[4][idx_start:idx_end + 1])], [np.array(data[5][idx_start:idx_end + 1])]]).T
-    return x
-
-
-def create_catchment_dict(sheet_path):
-    df = pd.read_excel(sheet_path, index_col=0).dropna().T
-    means = df.mean().values
-    stds = df.std(ddof=0).values
-    x = df.values
-    catch_dict = {k: x[i, :] for i, k in enumerate(df.T.columns)}
-    catch_dict['mean'] = means
-    catch_dict['std'] = stds
-    return catch_dict
-
-
-def get_date_range_and_idx(start_date, end_date, date_range):
-    start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
-    end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
-    idx = np.where(np.bitwise_and(start_date_pd <= date_range, date_range <= end_date_pd))[0]
-    date_range_out = pd.date_range(start_date_pd, end_date_pd)
-    return date_range_out, idx
-
-
-def get_index_by_date(date_in, start_date=DATA_START_DATE, end_date=DATA_END_DATE):
-    start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
-    end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
-    date_range = pd.date_range(start_date_pd, end_date_pd)
-    date_in_pd = pd.to_datetime(datetime.datetime(date_in[0], date_in[1], date_in[2], 0, 0))
-    idx = np.where(date_in_pd == date_range)[0]
-    assert len(idx) > 0, f"Please supply a date between {start_date} and {end_date}"
-    return idx
-
-
-def get_months_by_dates(start_date, end_date):
-    start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
-    end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
-    date_range = pd.date_range(start_date_pd, end_date_pd)
-    months = [date_range[i].month for i in range(0, len(date_range))]
-    return months
-
-
-def get_index_by_lat_lon(lat, lon, lat_grid=LAT_GRID, lon_grid=LON_GRID):
-    i = np.where(lat == lat_grid)[0]
-    assert len(i) > 0, f"Please supply latitude between {min(lat_grid)} and {max(lat_grid)}"
-    j = np.where(lon == lon_grid)[0]
-    assert len(j) > 0, f"Please supply longitude between {min(lon_grid)} and {max(lon_grid)}"
-    return i, j
-
-
-def get_index_all_data(date_in, lat, lon, lat_grid=LAT_GRID, lon_grid=LON_GRID, start_date=DATA_START_DATE,
-                       end_date=DATA_END_DATE):
-    date_i = get_index_by_date(date_in, start_date=DATA_START_DATE, end_date=DATA_END_DATE)
-    lat_i, lon_i = get_index_by_lat_lon(lat, lon, lat_grid=LAT_GRID, lon_grid=LON_GRID)
-    return date_i, lat_i, lon_i
-
-
-"""
-generating the "image" basin from a larger "image" by mask:
-the lat_grid and lon_grid are two 1-d arrays that construct a matrix of points
-that depicting the bottom right corner of every "pixel" of the large area.
-from this large area, we are checking if the "pixels" of the basins smaller area
-are in this large area and creating a corresponding mask.
-The mask is in the size of the large area - 1 if this pixel in also in the basin's area,
-and 0 otherwise
-"""
-
-
-def create_basin_mask(basin, lat_grid, lon_grid):
-    # getting the grid describing the basin from file
-    df = pd.read_csv(PATH_LOC.format(basin), header=None, delim_whitespace=True)
-    basin_lat_lot = df.values
-    # lat_grid is an 1-d array that describing the horizontal lines of the rectangle
-    # surrounding the basin
-    h = len(lat_grid)
-    # lon_grid is an 1-d array that describing the vertical lines of the rectangle
-    # surrounding the basin
-    w = len(lon_grid)
-    # initialize a matrix with all zeros
-    idx_mat = np.zeros((h, w), dtype=bool)
-    # for every pixel that is also in the basin area, set the indices of this pixel
-    # (bottom right corner of the pixel) in the large matrix to True
-    for lat_lon_i in basin_lat_lot:
-        i, j = get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], lat_grid, lon_grid)
-        idx_mat[i[0], j[0]] = True
-    return idx_mat
-
-
-def get_basin_discharge(basin_name, start_date, end_date):
-    # Getting Discharge (how much water are running through
-    # specific point / river in a given amount of time -
-    # usually cubic metre per second)
-    data_discharge = pd.read_csv(PATH_LABEL + DISCH_FORMAT.format(basin_name),
-                                 header=None, delim_whitespace=True)
-    idx_start, idx_end = get_index(data_discharge, start_date), get_index(data_discharge, end_date)
-    y = np.array(data_discharge[3][idx_start:idx_end + 1])
-    return y
-
-
-def reshape_data(x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Reshape matrix data into sample shape for LSTM training.
-    :param x: Matrix containing input features column wise and time steps row wise
-    :param y: Matrix containing the output feature.
-    :param seq_length: Length of look back days for one day of prediction
-    :return: Two np.ndarrays, the first of shape (samples, length of sequence,
-      number of features), containing the input data for the LSTM. The second
-      of shape (samples, 1) containing the expected output for each input
-      sample.
-    """
-    num_samples, num_features = x.shape
-    x_new = np.zeros((num_samples - seq_length + 1, seq_length, num_features))
-    y_new = np.zeros((num_samples - seq_length + 1, 1))
-    for i in range(0, x_new.shape[0]):
-        x_new[i, :, :num_features] = x[i:i + seq_length, :]
-        y_new[i, :] = y[i + seq_length - 1, 0]
-    return x_new, y_new
-
-
-def reshape_data_basins(x: np.ndarray, y: np.ndarray, seq_length: int, basin_list: list, lead: int) -> Tuple[
-    np.ndarray, np.ndarray]:
-    """
-    Reshape matrix data into sample shape for LSTM training.
-    :param x: Matrix containing input features column wise and time steps row wise
-    :param y: Matrix containing the output feature.
-    :param seq_length: Length of look back days for one day of prediction
-    :return: Two np.ndarrays, the first of shape (samples, length of sequence,
-      number of features), containing the input data for the LSTM. The second
-      of shape (samples, 1) containing the expected output for each input
-      sample.
-    """
-    n_basins = len(basin_list)
-    data_size = int(x.shape[0] / n_basins)
-
-    for i in range(n_basins):
-        if i == 0:
-            x_new, y_new = reshape_data(x[:data_size - lead, :], y[lead:data_size], seq_length)
-        else:
-            idx = i * data_size
-            x_temp, y_temp = reshape_data(x[idx:idx - lead + data_size, :], y[idx + lead:idx + data_size], seq_length)
-            x_new = np.concatenate([x_new, x_temp], axis=0)
-            y_new = np.concatenate([y_new, y_temp], axis=0)
-    return x_new, y_new
-
-
-class IMDGodavari(Dataset):
-    """
-    Torch Dataset for basic use of data from the data set.
-    This data set provides meteorological observations and discharge
-    of a given basin from the IMD Godavari data set.
-    """
-
-    def __init__(self, all_data: np.array, basin_list: List, seq_length: int, period: str = None,
-                 dates: List = None, months: List = None, min_values: np.array = None, max_values: np.array = None,
-                 idx: list = [True, True, True], lead=0, mask_list=[0, 0.5, 0.5], include_static: np.bool = True,
-                 mean_y=None, std_y=None):
-        """Initialize Dataset containing the data of a single basin.
-        :param basin_list: List of basins.
-        :param seq_length: Length of the time window of meteorological
-        input provided for one time step of prediction.
-        (currently it's 30 - 30 days)
-        :param period: (optional) One of ['train', 'eval']. None loads the entire time series.
-        :param dates: (optional) List of the start and end date of the discharge period that is used.
-        """
-        self.basin_list = basin_list
-        self.seq_length = seq_length
-        self.period = period
-        self.dates = dates
-        self.months = months
-        self.min_values = min_values
-        self.max_values = max_values
-        self.mean_y = mean_y
-        self.std_y = std_y
-        self.idx_features = idx
-        self.lead = lead
-        self.mask_list = mask_list
-        self.num_features = None
-        self.include_static = include_static
-        # load data
-        self.x, self.y = self._load_data(all_data)
-        # store number of samples as class attribute
-        self.num_samples = self.x.shape[0]
-        # store number of features as class attribute
-
-    def __len__(self):
-        return self.num_samples
-
-    def __getitem__(self, idx: int):
-        return self.x[idx], self.y[idx]
-
-    def _load_data(self, all_data):
-        """Load input and output data from text files.    """
-        start_date, end_date = self.dates
-        idx_s = get_index_by_date(start_date)[0]
-        idx_e = get_index_by_date(end_date)[0]
-        # Data is reduced to the dates and features sub space.
-        # the features are the channels (3 features - precipitation,
-        # minimum temperature, maximum temperature)
-        data = copy.deepcopy(all_data[idx_s:idx_e + 1, idx_features, :, :])
-        time_span = data.shape[0]
-        if self.period == 'train':
-            # axis = 0 - getting the minimum / maximum of first dimension
-            # ("rows", but here it's not really rows because it's a tensor and not a matrix)
-            # axis = 1 - getting the minimum / maximum of second dimension
-            # ("columns", but here it's not really columns because it's a tensor and not a matrix)
-            # Normalizing the data. There are two typical types of normalization:
-            # 1. (min - max normalization) - subtract the min and divide by (max - min)
-            # 2. (std - mean normalization) - subtract the mean and divide by the std
-
-            # specifically, here we are getting the minimum / maximum
-            # of all of the time stamps + H_LAT + W_LON per channel - i.e. - for all of the channels
-            # we are calculating the min / max over all the other dimensions.
-            self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
-            self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
-        for i in range(data.shape[1]):
-            data[:, i, :] -= self.min_values[i]
-            data[:, i, :] /= (self.max_values[i] - self.min_values[i])
-        self.num_features = data.shape[2] * data.shape[3]
-
-        for i, basin in enumerate(self.basin_list):
-            if i == 0:
-                x, x_s = self._get_basin_data(basin, data, start_date, end_date)
-                y = get_basin_discharge(basin, start_date, end_date)
-                if self.period == 'train':
-                    # Scaling the training data for each basin
-                    y = self._upadte_basin_dict(basin, y)
-            else:
-                x_temp, x_s_temp = self._get_basin_data(basin, data, start_date, end_date)
-                y_temp = get_basin_discharge(basin, start_date, end_date)
-                if self.period == 'train':
-                    # Scaling the training data for each basin
-                    y_temp = self._upadte_basin_dict(basin, y_temp)
-                x = np.concatenate([x, x_temp], axis=0)
-                if self.include_static == True:
-                    x_s = np.concatenate([x_s, x_s_temp], axis=0)
-                y = np.concatenate([y, y_temp])
-        if self.include_static == True:
-            x = np.concatenate([x, x_s], axis=1)
-        else:
-            self.num_attributes = 0
-        # normalize data, reshape for LSTM training and remove invalid samples
-        print(['1: ', x.shape, y.shape], 'Original size')
-        x, y = reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
-        print(['2: ', x.shape, y.shape], 'After reshape and trimming sequenece and lead')
-        x, y = self.get_monthly_data(x, y, start_date, end_date)
-        print(['3: ', x.shape, y.shape], 'Monthly pick')
-        print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
-        print("Number of attributes should be: {0}".format(self.num_attributes))
-        print("Number of features should be: num_features + num_attributes= {0}".format(
-            self.num_features + self.num_attributes))
-        print("Number of sample should be: (time_span - sequence_len + 1 -lead) x num_basins= {0}".format(
-            (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)))
-        print("Data size for LSTM should be: (num_samples, sequence_len, num_features) = {0}".format(x.shape))
-        # convert arrays to torch tensors
-        x = torch.from_numpy(x.astype(np.float32))
-        y = torch.from_numpy(y.astype(np.float32))
-        return x, y
-
-    def _get_basin_data(self, basin, data, start_date, end_date):
-        mask = create_basin_mask(basin, LAT_GRID, LON_GRID)
-        x = copy.deepcopy(data)
-        x = np.multiply(x, mask)
-        x_static_vec = (CATCHMENT_DICT[basin] - CATCHMENT_DICT['mean']) / CATCHMENT_DICT['std']
-        # for Efart! duplicating the static features to each of the input images
-        x_static = np.repeat([x_static_vec], x.shape[0], axis=0)
-        _, self.num_attributes = x_static.shape
-
-        if self.include_static == False:
-            self.num_attributes = 0
-            x_static = None
-        num_features = x.shape[2] * x.shape[3]
-        print(['get_basin_data', x.shape[2], x.shape[3]])
-        x = np.reshape(x, (x.shape[0], x.shape[1] * num_features))
-        return x, x_static
-
-    def local_rescale(self, feature: np.ndarray, variable: str, mean_std=None) -> np.ndarray:
-        """Rescale output features with local mean/std.
-          :param feature: Numpy array containing the feature(s) as matrix.
-          param variable: Either 'inputs' or 'output' showing which feature will
-          be normalized
-        :return: array containing the normalized feature
-        """
-        if mean_std:
-            mean_y, std_y = mean_std
-            return feature * std_y + mean_y
-        n_basins = len(self.basin_list)
-        idx = int(len(feature) / n_basins)
-        for i, basin_name in enumerate(self.basin_list):
-            if basin_name not in self.mean_y.keys():
-                raise RuntimeError(
-                    f"Unknown Basin {basin_name}, the trainig data was trained on {list(self.mean_y.keys())}")
-            if i == 0:
-                y = feature[i * idx:(i + 1) * idx]
-                y = y * self.std_y[basin_name] + self.mean_y[basin_name]
-            else:
-                y_temp = feature[i * idx:(i + 1) * idx]
-                y_temp = y_temp * self.std_y[basin_name] + self.mean_y[basin_name]
-                y = np.concatenate([y, y_temp])
-        return y
-
-    def _upadte_basin_dict(self, basin_name, y):
-        if self.mean_y is None:
-            self.mean_y = {}
-            self.std_y = {}
-        mu_y = y.mean()
-        std_y = y.std()
-        self.mean_y[basin_name] = mu_y
-        self.std_y[basin_name] = std_y
-        return (y - mu_y) / std_y
-
-    def get_monthly_data(self, x, y, start_date, end_date):
-        if self.months is None:
-            return x, y
-        else:
-            # Rescaling the label
-            if self.period == 'train':
-                y = self.local_rescale(y, 'output')
-            # getting the months for each date
-            date_months = get_months_by_dates(start_date, end_date)
-            # Adjusting for sequence length and lead
-            date_months = date_months[(self.seq_length + self.lead - 1):]
-            n_samples_per_basin = int(len(y) / len(self.basin_list))
-            ind_date_months = [i for i in range(0, n_samples_per_basin) if date_months[i] in self.months]
-            ind_include = []
-            for j in range(len(self.basin_list)):
-                idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
-                if self.period == 'train':
-                    y[idx_temp] = self._upadte_basin_dict(self.basin_list[j], y[idx_temp])
-                ind_include += idx_temp
-            x = x[ind_include, :, :]
-            y = y[ind_include]
-            return x, y
-
-    def get_min(self):
-        return self.min_values
-
-    def get_max(self):
-        return self.max_values
-
-    def get_mean_y(self):
-        return self.mean_y
-
-    def get_std_y(self):
-        return self.std_y
-
-    def get_num_features(self):
-        return self.num_features
-
-
-class DNN(nn.Module):
-    def __init__(self, input_size: int, num_hidden_layers: int, num_hidden_units: int, dropout_rate: float = 0.0):
-        super(DNN, self).__init__()
-        self.input_size = input_size
-        self.num_hidden_layers = num_hidden_layers
-        self.num_hidden_units = num_hidden_units
-        self.dropout_rate = dropout_rate
-        self.input_layer = nn.Linear(self.input_size, self.num_hidden_units)
-        self.hidden_layer = nn.Linear(self.num_hidden_units, self.num_hidden_units)
-        self.output_layer = nn.Linear(self.num_hidden_units, 1)
-        self.dropout = nn.Dropout(p=self.dropout_rate)
-
-    def forward(self, x):
-        batch_size, timesteps, ts_size = x.size()
-        x = x.view(batch_size, timesteps * ts_size)
-        x = self.input_layer(x)
-        for i in range(0, self.num_hidden_layers):
-            x = self.hidden_layer(F.relu(self.hidden_layer(x)))
-        pred = self.dropout(self.output_layer(x))
-        return pred
 
 
 def train_epoch(model, optimizer, loader, loss_func, epoch):
@@ -741,22 +360,6 @@ for i in range(n_epochs):
     torch.save(model, path_train_ckpt + model_name)
     last_model_path = path_train_ckpt + model_name
 
-# Evaluate on test set
-# Validation data. We use the feature means/stds of the training period for normalization
-# Training data
-
-# Use existing model
-# CNNLSTM:
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
-# model = torch.load(path_to_ckpt)
-# CNNLSTM monsoon
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_23-18-29-43/epoch_50_nse_0.588.ckpt'
-# model = torch.load(path_to_ckpt)
-# DNN:
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_19-15-36-05/epoch_50_nse_0.881.ckpt'
-# model = torch.load(path_to_ckpt)
-
-
 # start_date = (2000, 1, 1)
 # end_date = (2014, 12, 31)
 start_date = (2010, 1, 1)
@@ -778,11 +381,6 @@ ds_val = IMDGodavari(all_data,
                      std_y=ds_train.get_std_y(),
                      include_static=INCLUDE_STATIC)
 val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)
-# path_to_ckpt = "drive/MyDrive/Efrat/cnn_lstm/2021_08_10-14-48-52/epoch_15_nse_0.774.ckpt"
-# path_to_ckpt = last_model_path
-# if path_to_ckpt:
-#   # 'drive/MyDrive/Efrat/model_lstm/2021_07_24-21-23-40/epoch_6_nse_0.825.ckpt'
-#   model = torch.load(path_to_ckpt)
 obs, preds = eval_model(model, val_loader)
 preds = ds_val.local_rescale(preds.cpu().numpy(), variable='output')
 obs = obs.numpy()
@@ -815,10 +413,6 @@ _ = ax.set_ylabel("Discharge (mm/d)")
 
 """# Integrated gradients"""
 # Calculate Integrated Gradients
-# path_to_ckpt = last_model_path
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
-# if path_to_ckpt:
-#   model = torch.load(path_to_ckpt)
 
 start_date_ig = (2012, 8, 26)
 end_date_ig = (2012, 9, 5)

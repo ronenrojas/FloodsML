@@ -8,48 +8,57 @@ import os
 
 class Preprocessor:
 
-    def __init__(self, root_folder, start_date: Tuple, end_date: Tuple):
+    def __init__(self, root_folder, idx_features, start_date: Tuple, end_date: Tuple,
+                 lat_min=17.375, lat_max=22.625, lon_min=73.625,
+                 lon_max=82.875, grid_delta=0.25, data_len=17532,
+                 num_channels=3):
         if not root_folder:
             parent_dir = str(Path(os.getcwd()))
-            self.root_folder = parent_dir + "/"
+            self.root_folder = parent_dir + os.sep
         else:
             self.root_folder = root_folder
+        self.path_data_file = self.root_folder + str(Path("/" + "Data/raw_data_fixed_17532_3_22_38"))
+        self.dims_json_file_path = self.root_folder + "./dims_json.json"
+        self.path_label = self.root_folder + "Data/CWC/"
         self.path_loc = self.root_folder + "Data/LatLon/{0}_lat_lon"
         self.path_data_clean = self.root_folder + "data/imd_lat_lon_reduced/"
         self.path_model = self.root_folder + "cnn_lstm/"
         self.dispatch_format = self.root_folder + "cwc_discharge_{0}_clean"
         self.path_catchments = self.root_folder + "data/catchments.xlsx"
         self.file_format = self.root_folder + "data_{0}_{1}"
+        self.idx_features = idx_features
         # lat - width, lon - height
-        self.lat_min = 17.375
-        self.lat_max = 22.625
-        self.lon_min = 73.625
-        self.lon_max = 82.875
-        self.grid_delta = 0.25
+        self.lat_min = lat_min
+        self.lat_max = lat_max
+        self.lon_min = lon_min
+        self.lon_max = lon_max
+        self.grid_delta = grid_delta
+        self.data_len = data_len
+        self.num_channels = num_channels
         self.lat_grid = np.arange(self.lat_min, self.lat_max + self.grid_delta / 2, self.grid_delta)
         self.lon_grid = np.arange(self.lon_min, self.lon_max + self.grid_delta / 2, self.grid_delta)
-        self.data_len = 17532
-        self.num_channels = 3
         self.default_lat = len(self.lat_grid)
         self.default_lon = len(self.lon_grid)
-        self.data_start_date = (1967, 1, 1)
-        self.data_end_date = (2014, 12, 31)
+        self.data_start_date = start_date
+        self.data_end_date = end_date
 
-    def get_index(self, data, date_input):
+    @staticmethod
+    def get_index(data, date_input):
         year, month, day = date_input
         return int(np.where(np.array(data[0] == year) * np.array(data[1] == month)
                             * np.array(data[2] == day))[0].squeeze())
 
     def get_geo_raw_data(self, lat, lon, start_date, end_date):
         # Getting data by lat lon coordinates
-        data = pd.read_csv(self.PATH_DATA_CLEAN + self.FILE_FORMAT.format(lat, lon), header=None, delim_whitespace=True)
-        idx_start, idx_end = self.get_index(data, start_date), self.get_index(data, end_date)
+        data = pd.read_csv(self.path_data_clean + self.file_format.format(lat, lon), header=None, delim_whitespace=True)
+        idx_start, idx_end = Preprocessor.get_index(data, start_date), Preprocessor.get_index(data, end_date)
         x = np.array(data[3][idx_start:idx_end + 1])
         x = np.concatenate(
             [[x], [np.array(data[4][idx_start:idx_end + 1])], [np.array(data[5][idx_start:idx_end + 1])]]).T
         return x
 
-    def create_catchment_dict(self, sheet_path):
+    @staticmethod
+    def create_catchment_dict(sheet_path):
         df = pd.read_excel(sheet_path, index_col=0).dropna().T
         means = df.mean().values
         stds = df.std(ddof=0).values
@@ -59,6 +68,7 @@ class Preprocessor:
         catch_dict['std'] = stds
         return catch_dict
 
+    @staticmethod
     def get_date_range_and_idx(self, start_date, end_date, date_range):
         start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
         end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
@@ -66,32 +76,25 @@ class Preprocessor:
         date_range_out = pd.date_range(start_date_pd, end_date_pd)
         return date_range_out, idx
 
-    def get_index_by_date(self, date_in, start_date, end_date):
-        start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
-        end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
-        date_range = pd.date_range(start_date_pd, end_date_pd)
-        date_in_pd = pd.to_datetime(datetime.datetime(date_in[0], date_in[1], date_in[2], 0, 0))
-        idx = np.where(date_in_pd == date_range)[0]
-        assert len(idx) > 0, f"Please supply a date between {start_date} and {end_date}"
-        return idx
-
-    def get_months_by_dates(self, start_date, end_date):
+    @staticmethod
+    def get_months_by_dates(start_date, end_date):
         start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
         end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
         date_range = pd.date_range(start_date_pd, end_date_pd)
         months = [date_range[i].month for i in range(0, len(date_range))]
         return months
 
-    def get_index_by_lat_lon(self, lat, lon, lat_grid, lon_grid):
+    @staticmethod
+    def get_index_by_lat_lon(lat, lon, lat_grid, lon_grid):
         i = np.where(lat == lat_grid)[0]
         assert len(i) > 0, f"Please supply latitude between {min(lat_grid)} and {max(lat_grid)}"
         j = np.where(lon == lon_grid)[0]
         assert len(j) > 0, f"Please supply longitude between {min(lon_grid)} and {max(lon_grid)}"
         return i, j
 
-    def get_index_all_data(self, date_in, lat, lon, lat_grid, lon_grid, start_date, end_date):
-        date_i = self.get_index_by_date(date_in, start_date=start_date, end_date=end_date)
-        lat_i, lon_i = self.get_index_by_lat_lon(lat, lon, lat_grid=lat_grid, lon_grid=lon_grid)
+    def get_index_all_data(self, date_in, lat, lon, lat_grid, lon_grid):
+        date_i = self.get_index_by_date(date_in)
+        lat_i, lon_i = Preprocessor.get_index_by_lat_lon(lat, lon, lat_grid=lat_grid, lon_grid=lon_grid)
         return date_i, lat_i, lon_i
 
     """
@@ -104,22 +107,22 @@ class Preprocessor:
     and 0 otherwise
     """
 
-    def create_basin_mask(self, basin, lat_grid, lon_grid):
+    def create_basin_mask(self, basin):
         # getting the grid describing the basin from file
-        df = pd.read_csv(self.PATH_LOC.format(basin), header=None, delim_whitespace=True)
+        df = pd.read_csv(self.path_loc.format(basin), header=None, delim_whitespace=True)
         basin_lat_lot = df.values
         # lat_grid is an 1-d array that describing the horizontal lines of the rectangle
         # surrounding the basin
-        h = len(lat_grid)
+        h = len(self.lat_grid)
         # lon_grid is an 1-d array that describing the vertical lines of the rectangle
         # surrounding the basin
-        w = len(lon_grid)
+        w = len(self.lon_grid)
         # initialize a matrix with all zeros
         idx_mat = np.zeros((h, w), dtype=bool)
         # for every pixel that is also in the basin area, set the indices of this pixel
         # (bottom right corner of the pixel) in the large matrix to True
         for lat_lon_i in basin_lat_lot:
-            i, j = self.get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], lat_grid, lon_grid)
+            i, j = self.get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], self.lat_grid, self.lon_grid)
             idx_mat[i[0], j[0]] = True
         return idx_mat
 
@@ -127,13 +130,15 @@ class Preprocessor:
         # Getting Discharge (how much water are running through
         # specific point / river in a given amount of time -
         # usually cubic metre per second)
-        data_discharge = pd.read_csv(self.PATH_LABEL + self.DISCH_FORMAT.format(basin_name),
+        data_discharge = pd.read_csv(self.path_label + self.dispatch_format.format(basin_name),
                                      header=None, delim_whitespace=True)
-        idx_start, idx_end = self.get_index(data_discharge, start_date), self.get_index(data_discharge, end_date)
+        idx_start, idx_end = Preprocessor.get_index(data_discharge, start_date), \
+                             Preprocessor.get_index(data_discharge, end_date)
         y = np.array(data_discharge[3][idx_start:idx_end + 1])
         return y
 
-    def reshape_data(self, x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:
+    @staticmethod
+    def reshape_data(x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:
         """
         Reshape matrix data into sample shape for LSTM training.
         :param x: Matrix containing input features column wise and time steps row wise
@@ -157,6 +162,8 @@ class Preprocessor:
         np.ndarray, np.ndarray]:
         """
         Reshape matrix data into sample shape for LSTM training.
+        :param lead:
+        :param basin_list:
         :param x: Matrix containing input features column wise and time steps row wise
         :param y: Matrix containing the output feature.
         :param seq_length: Length of look back days for one day of prediction
@@ -178,3 +185,14 @@ class Preprocessor:
                 x_new = np.concatenate([x_new, x_temp], axis=0)
                 y_new = np.concatenate([y_new, y_temp], axis=0)
         return x_new, y_new
+
+    def get_index_by_date(self, date_in):
+        start_date_pd = pd.to_datetime(datetime.datetime(self.data_start_date[0], self.data_start_date[1],
+                                                         self.data_start_date[2], 0, 0))
+        end_date_pd = pd.to_datetime(
+            datetime.datetime(self.data_end_date[0], self.data_end_date[1], self.data_end_date[2], 0, 0))
+        date_range = pd.date_range(start_date_pd, end_date_pd)
+        date_in_pd = pd.to_datetime(datetime.datetime(date_in[0], date_in[1], date_in[2], 0, 0))
+        idx = np.where(date_in_pd == date_range)[0]
+        assert len(idx) > 0, f"Please supply a date between {self.data_start_date} and {self.data_end_date}"
+        return idx

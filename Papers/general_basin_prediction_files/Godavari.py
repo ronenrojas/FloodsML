@@ -1,7 +1,9 @@
 from torch.utils.data import Dataset
 import copy
-from typing import List
+from typing import List, Dict
 import numpy as np
+import torch
+from preprocess_data import Preprocessor
 
 
 class IMDGodavari(Dataset):
@@ -11,10 +13,23 @@ class IMDGodavari(Dataset):
     of a given basin from the IMD Godavari data set.
     """
 
-    def __init__(self, all_data: np.array, basin_list: List, seq_length: int, period: str = None,
-                 dates: List = None, months: List = None, min_values: np.array = None, max_values: np.array = None,
-                 idx: list = [True, True, True], lead=0, mask_list=[0, 0.5, 0.5], include_static: np.bool = True,
-                 mean_y=None, std_y=None):
+    def __init__(self, all_data: np.array,
+                 basin_list: List,
+                 preprocessor: Preprocessor,
+                 catchment_dict: Dict,
+                 seq_length: int,
+                 period: str = None,
+                 dates: List = None,
+                 months: List = None,
+                 min_values: np.array = None,
+                 max_values: np.array = None,
+                 idx: list = [True, True, True],
+                 lead=0,
+                 mask_list=[0, 0.5, 0.5],
+                 include_static:
+                 np.bool = True,
+                 mean_y=None,
+                 std_y=None):
         """Initialize Dataset containing the data of a single basin.
         :param basin_list: List of basins.
         :param seq_length: Length of the time window of meteorological
@@ -24,6 +39,8 @@ class IMDGodavari(Dataset):
         :param dates: (optional) List of the start and end date of the discharge period that is used.
         """
         self.basin_list = basin_list
+        self.preprocessor = preprocessor
+        self.catchment_dict = catchment_dict
         self.seq_length = seq_length
         self.period = period
         self.dates = dates
@@ -52,12 +69,12 @@ class IMDGodavari(Dataset):
     def _load_data(self, all_data):
         """Load input and output data from text files.    """
         start_date, end_date = self.dates
-        idx_s = get_index_by_date(start_date)[0]
-        idx_e = get_index_by_date(end_date)[0]
-        # Data is reduced to the dates and features sub space.
+        idx_s = self.preprocessor.get_index_by_date(start_date)[0]
+        idx_e = self.preprocessor.get_index_by_date(end_date)[0]
+        # Data is reduced to the dates and features subspace.
         # the features are the channels (3 features - precipitation,
         # minimum temperature, maximum temperature)
-        data = copy.deepcopy(all_data[idx_s:idx_e + 1, idx_features, :, :])
+        data = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
         time_span = data.shape[0]
         if self.period == 'train':
             # axis = 0 - getting the minimum / maximum of first dimension
@@ -80,17 +97,17 @@ class IMDGodavari(Dataset):
 
         for i, basin in enumerate(self.basin_list):
             if i == 0:
-                x, x_s = self._get_basin_data(basin, data, start_date, end_date)
-                y = get_basin_discharge(basin, start_date, end_date)
+                x, x_s = self._get_basin_data(basin, data)
+                y = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
                 if self.period == 'train':
                     # Scaling the training data for each basin
-                    y = self._upadte_basin_dict(basin, y)
+                    y = self._update_basin_dict(basin, y)
             else:
-                x_temp, x_s_temp = self._get_basin_data(basin, data, start_date, end_date)
-                y_temp = get_basin_discharge(basin, start_date, end_date)
+                x_temp, x_s_temp = self._get_basin_data(basin, data)
+                y_temp = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
                 if self.period == 'train':
                     # Scaling the training data for each basin
-                    y_temp = self._upadte_basin_dict(basin, y_temp)
+                    y_temp = self._update_basin_dict(basin, y_temp)
                 x = np.concatenate([x, x_temp], axis=0)
                 if self.include_static:
                     x_s = np.concatenate([x_s, x_s_temp], axis=0)
@@ -101,7 +118,7 @@ class IMDGodavari(Dataset):
             self.num_attributes = 0
         # normalize data, reshape for LSTM training and remove invalid samples
         print(['1: ', x.shape, y.shape], 'Original size')
-        x, y = reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
+        x, y = self.preprocessor.reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
         print(['2: ', x.shape, y.shape], 'After reshape and trimming sequenece and lead')
         x, y = self.get_monthly_data(x, y, start_date, end_date)
         print(['3: ', x.shape, y.shape], 'Monthly pick')
@@ -117,16 +134,16 @@ class IMDGodavari(Dataset):
         y = torch.from_numpy(y.astype(np.float32))
         return x, y
 
-    def _get_basin_data(self, basin, data, start_date, end_date):
-        mask = create_basin_mask(basin, LAT_GRID, LON_GRID)
+    def _get_basin_data(self, basin, data):
+        mask = self.preprocessor.create_basin_mask(basin)
         x = copy.deepcopy(data)
         x = np.multiply(x, mask)
-        x_static_vec = (CATCHMENT_DICT[basin] - CATCHMENT_DICT['mean']) / CATCHMENT_DICT['std']
+        x_static_vec = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
         # for Efart! duplicating the static features to each of the input images
         x_static = np.repeat([x_static_vec], x.shape[0], axis=0)
         _, self.num_attributes = x_static.shape
 
-        if self.include_static == False:
+        if not self.include_static:
             self.num_attributes = 0
             x_static = None
         num_features = x.shape[2] * x.shape[3]
@@ -136,6 +153,8 @@ class IMDGodavari(Dataset):
 
     def local_rescale(self, feature: np.ndarray, variable: str, mean_std=None) -> np.ndarray:
         """Rescale output features with local mean/std.
+          :param mean_std:
+          :param variable:
           :param feature: Numpy array containing the feature(s) as matrix.
           param variable: Either 'inputs' or 'output' showing which feature will
           be normalized
@@ -159,7 +178,7 @@ class IMDGodavari(Dataset):
                 y = np.concatenate([y, y_temp])
         return y
 
-    def _upadte_basin_dict(self, basin_name, y):
+    def _update_basin_dict(self, basin_name, y):
         if self.mean_y is None:
             self.mean_y = {}
             self.std_y = {}
@@ -177,7 +196,7 @@ class IMDGodavari(Dataset):
             if self.period == 'train':
                 y = self.local_rescale(y, 'output')
             # getting the months for each date
-            date_months = get_months_by_dates(start_date, end_date)
+            date_months = self.preprocessor.get_months_by_dates(start_date, end_date)
             # Adjusting for sequence length and lead
             date_months = date_months[(self.seq_length + self.lead - 1):]
             n_samples_per_basin = int(len(y) / len(self.basin_list))
@@ -186,7 +205,7 @@ class IMDGodavari(Dataset):
             for j in range(len(self.basin_list)):
                 idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
                 if self.period == 'train':
-                    y[idx_temp] = self._upadte_basin_dict(self.basin_list[j], y[idx_temp])
+                    y[idx_temp] = self._update_basin_dict(self.basin_list[j], y[idx_temp])
                 ind_include += idx_temp
             x = x[ind_include, :, :]
             y = y[ind_include]

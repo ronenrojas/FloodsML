@@ -249,7 +249,8 @@ def main():
                                 LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
 
     # The data will always be in shape of - samples * channels * width * height
-    all_data, image_width, image_height = preprocessor.reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
+    all_data, image_width, image_height = preprocessor.reshape_data_by_lat_lon_file(
+        PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
 
     ##############
     # Data set up#

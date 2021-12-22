@@ -38,6 +38,7 @@ class IMDGodavari(Dataset):
         :param period: (optional) One of ['train', 'eval']. None loads the entire time series.
         :param dates: (optional) List of the start and end date of the discharge period that is used.
         """
+        self.num_attributes = 0
         self.basin_list = basin_list
         self.preprocessor = preprocessor
         self.catchment_dict = catchment_dict
@@ -55,16 +56,24 @@ class IMDGodavari(Dataset):
         self.num_features = None
         self.include_static = include_static
         self.indices_X = np.zeros((preprocessor.lat_grid, preprocessor.lon_grid))
-        # load data
-        self.x, self.y = self._load_data(all_data)
+        self.indices_X, self.indices_Y, self.static_features = self._load_data(all_data)
+        self.all_data = all_data
         self.num_samples = self.x.shape[0]
         self.indices_Y = np.zeros((self.num_samples,))
+        self.start_end_indices_basins = {}
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, idx: int):
-        return self.x[idx], self.y[idx]
+        x, y = self.all_data[self.indices_X[idx]], self.indices_Y[self.indices_Y[idx]]
+        x = (x - self.min_values) / (self.max_values - self.min_values)
+        for bounds in self.start_end_indices_basins.keys():
+            if bounds[0] <= idx <= bounds[1]:
+                mu_y = self.mean_y[self.start_end_indices_basins[bounds]]
+                std_y = self.std_y[self.start_end_indices_basins[bounds]]
+                y = ((y - mu_y) / std_y)
+        return x, y
 
     def _load_data(self, all_data):
         """Load input and output data from text files.    """
@@ -90,52 +99,47 @@ class IMDGodavari(Dataset):
             # we are calculating the min / max over all the other dimensions.
             self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
-        for i in range(data.shape[1]):
-            data[:, i, :] -= self.min_values[i]
-            data[:, i, :] /= (self.max_values[i] - self.min_values[i])
         self.num_features = data.shape[2] * data.shape[3]
+        num_of_samples_curr = 0
+        num_of_samples_prev = 0
         for i, basin in enumerate(self.basin_list):
             if i == 0:
                 indices_X, static_features = self.get_basin_indices_x_and_static_features(basin,
-                                                                              data.shape[0],
-                                                                              data.shape[1])
-                indices_Y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
+                                                                                          data.shape[0],
+                                                                                          data.shape[1])
+                num_of_samples_curr += len(indices_X)
+                indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
                 if self.period == 'train':
-                    # Scaling the training data for each basin
-                    y = self._update_basin_dict(basin, y)
+                    y = self._update_basin_dict(y, basin,
+                                                starting_ind_basin=num_of_samples_prev,
+                                                end_ind_basin=num_of_samples_curr)
             else:
-                x_temp, x_s_temp = self.get_basin_indices_x_and_static_features(basin,
-                                                                                data.shape[0],
-                                                                                data.shape[1])
-                y_temp = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
+                indices_X_temp, static_features_temp = self.get_basin_indices_x_and_static_features(basin,
+                                                                                                    data.shape[0],
+                                                                                                    data.shape[1])
+                num_of_samples_curr += len(indices_X_temp)
+                indices_Y_temp, y_temp = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
                 if self.period == 'train':
-                    # Scaling the training data for each basin
-                    y_temp = self._update_basin_dict(basin, y_temp)
-                x = np.concatenate([x, x_temp], axis=0)
-                if self.include_static:
-                    static_features = np.concatenate([static_features, x_s_temp], axis=0)
+                    y_temp = self._update_basin_dict(y_temp, basin,
+                                                     starting_ind_basin=num_of_samples_prev,
+                                                     end_ind_basin=num_of_samples_curr)
+                indices_X = np.concatenate([indices_X, indices_X_temp], axis=0)
                 y = np.concatenate([y, y_temp])
-        if self.include_static:
-            x = np.concatenate([x, static_features], axis=1)
-        else:
-            self.num_attributes = 0
+                indices_Y = np.concatenate([indices_Y, indices_Y_temp], axis=0)
+                if self.include_static:
+                    static_features = np.concatenate([static_features, static_features_temp], axis=0)
+                else:
+                    self.num_attributes = 0
+            num_of_samples_prev = num_of_samples_curr
         # normalize data, reshape for LSTM training and remove invalid samples
-        print(['1: ', x.shape, y.shape], 'Original size')
-        x, y = self.preprocessor.reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
-        print(['2: ', x.shape, y.shape], 'After reshape and trimming sequenece and lead')
-        x, y = self.get_monthly_data(x, y, start_date, end_date)
-        print(['3: ', x.shape, y.shape], 'Monthly pick')
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
         print("Number of features should be: num_features + num_attributes= {0}".format(
             self.num_features + self.num_attributes))
         print("Number of sample should be: (time_span - sequence_len + 1 -lead) x num_basins= {0}".format(
             (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)))
-        print("Data size for LSTM should be: (num_samples, sequence_len, num_features) = {0}".format(x.shape))
         # convert arrays to torch tensors
-        x = torch.from_numpy(x.astype(np.float32))
-        y = torch.from_numpy(y.astype(np.float32))
-        return x, y
+        return indices_X, indices_Y, static_features
 
     def get_basin_indices_x_and_static_features(self, basin, num_samples, num_channels):
         indices_X = self.preprocessor.get_basin_indices_x(basin)
@@ -176,12 +180,13 @@ class IMDGodavari(Dataset):
                 y = np.concatenate([y, y_temp])
         return y
 
-    def _update_basin_dict(self, basin_name, y):
+    def _update_basin_dict(self, y, basin_name, starting_ind_basin, end_ind_basin):
         if self.mean_y is None:
             self.mean_y = {}
             self.std_y = {}
         mu_y = y.mean()
         std_y = y.std()
+        self.start_end_indices_basins[(starting_ind_basin, end_ind_basin)] = basin_name
         self.mean_y[basin_name] = mu_y
         self.std_y[basin_name] = std_y
         return (y - mu_y) / std_y

@@ -156,7 +156,8 @@ class Preprocessor:
         idx_start, idx_end = Preprocessor.get_index(data_discharge, start_date), \
                              Preprocessor.get_index(data_discharge, end_date)
         indices_Y = np.linspace(idx_start, idx_end + 1, 1)
-        return indices_Y
+        y = np.array(data_discharge[3][idx_start:idx_end + 1])
+        return indices_Y, y
 
     @staticmethod
     def reshape_data(x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:

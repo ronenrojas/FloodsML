@@ -4,6 +4,7 @@ import pandas as pd
 import datetime
 from pathlib import Path
 import os
+import json
 
 
 class Preprocessor:
@@ -41,6 +42,26 @@ class Preprocessor:
         self.default_lon = len(self.lon_grid)
         self.data_start_date = start_date
         self.data_end_date = end_date
+
+    # Latitude - Width
+    # Longitude - Height
+    def reshape_data_by_lat_lon_file(self, data_file_path, dims_json_file_path):
+        image_width = self.default_lat
+        image_height = self.default_lon
+        try:
+            f = open(dims_json_file_path)
+            dims_json_all = json.load(f)
+            if data_file_path in dims_json_all.keys():
+                dims_json = dims_json_all[data_file_path]
+                if "width" in dims_json.keys():
+                    image_width = dims_json["width"]
+                if "height" in dims_json.keys():
+                    image_height = dims_json["height"]
+        except Exception as e:
+            print("There was an exception in reading the dims file: {}".format(e))
+        data_ret = np.fromfile(data_file_path).reshape((self.data_len, self.num_channels,
+                                                        image_width, image_height))
+        return data_ret, image_width, image_height
 
     @staticmethod
     def get_index(data, date_input):
@@ -113,18 +134,18 @@ class Preprocessor:
         basin_lat_lot = df.values
         # lat_grid is an 1-d array that describing the horizontal lines of the rectangle
         # surrounding the basin
-        h = len(self.lat_grid)
         # lon_grid is an 1-d array that describing the vertical lines of the rectangle
         # surrounding the basin
-        w = len(self.lon_grid)
+        width = self.lat_grid
+        height = self.lon_grid
+        indices_X = np.ndarray((len(basin_lat_lot), width, height))
         # initialize a matrix with all zeros
-        idx_mat = np.zeros((h, w), dtype=bool)
         # for every pixel that is also in the basin area, set the indices of this pixel
         # (bottom right corner of the pixel) in the large matrix to True
         for lat_lon_i in basin_lat_lot:
-            i, j = self.get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], self.lat_grid, self.lon_grid)
-            idx_mat[i[0], j[0]] = True
-        return idx_mat
+            i, j = self.get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], width, height)
+            indices_X[lat_lon_i, i, j] = [i, j]
+        return indices_X
 
     def get_basin_discharge(self, basin_name, start_date, end_date):
         # Getting Discharge (how much water are running through
@@ -134,8 +155,8 @@ class Preprocessor:
                                      header=None, delim_whitespace=True)
         idx_start, idx_end = Preprocessor.get_index(data_discharge, start_date), \
                              Preprocessor.get_index(data_discharge, end_date)
-        y = np.array(data_discharge[3][idx_start:idx_end + 1])
-        return y
+        indices_Y = np.linspace(idx_start, idx_end + 1, 1)
+        return indices_Y
 
     @staticmethod
     def reshape_data(x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:

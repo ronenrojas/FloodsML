@@ -211,27 +211,6 @@ def convert_to_number(number):
         return None
 
 
-# Latitude - Width
-# Longitude - Height
-def reshape_data_by_lat_lon_file(data_file_path, dims_json_file_path):
-    image_width = DEFAULT_LAT
-    image_height = DEFAULT_LON
-    try:
-        f = open(dims_json_file_path)
-        dims_json_all = json.load(f)
-        if data_file_path in dims_json_all.keys():
-            dims_json = dims_json_all[data_file_path]
-            if "width" in dims_json.keys():
-                image_width = dims_json["width"]
-            if "height" in dims_json.keys():
-                image_height = dims_json["height"]
-    except Exception as e:
-        print("There was an exception in reading the dims file: {}".format(e))
-    data_ret = np.fromfile(data_file_path).reshape((DATA_LEN, NUM_CHANNELS,
-                                                    image_width, image_height))
-    return data_ret, image_width, image_height
-
-
 def main():
     # Whether to use CPU or GPU. Use False for CPU mode.
     use_gpu = True
@@ -268,7 +247,9 @@ def main():
 
     preprocessor = Preprocessor(PATH_ROOT, idx_features, DATA_START_DATE, DATA_END_DATE, LAT_MIN,
                                 LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
-    all_data, image_width, image_height = reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
+
+    # The data will always be in shape of - samples * channels * width * height
+    all_data, image_width, image_height = preprocessor.reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
 
     ##############
     # Data set up#

@@ -54,11 +54,11 @@ class IMDGodavari(Dataset):
         self.mask_list = mask_list
         self.num_features = None
         self.include_static = include_static
+        self.indices_X = np.zeros((preprocessor.lat_grid, preprocessor.lon_grid))
         # load data
         self.x, self.y = self._load_data(all_data)
-        # store number of samples as class attribute
         self.num_samples = self.x.shape[0]
-        # store number of features as class attribute
+        self.indices_Y = np.zeros((self.num_samples,))
 
     def __len__(self):
         return self.num_samples
@@ -86,7 +86,7 @@ class IMDGodavari(Dataset):
             # 2. (std - mean normalization) - subtract the mean and divide by the std
 
             # specifically, here we are getting the minimum / maximum
-            # of all of the time stamps + H_LAT + W_LON per channel - i.e. - for all of the channels
+            # of all the time stamps + H_LAT + W_LON per channel - i.e. - for all the channels
             # we are calculating the min / max over all the other dimensions.
             self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
@@ -94,16 +94,19 @@ class IMDGodavari(Dataset):
             data[:, i, :] -= self.min_values[i]
             data[:, i, :] /= (self.max_values[i] - self.min_values[i])
         self.num_features = data.shape[2] * data.shape[3]
-
         for i, basin in enumerate(self.basin_list):
             if i == 0:
-                x, x_s = self._get_basin_data(basin, data)
-                y = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
+                indices_X, x_s = self._get_basin_data(basin,
+                                                      data.shape[0],
+                                                      data.shape[1])
+                indices_Y = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
                 if self.period == 'train':
                     # Scaling the training data for each basin
                     y = self._update_basin_dict(basin, y)
             else:
-                x_temp, x_s_temp = self._get_basin_data(basin, data)
+                x_temp, x_s_temp = self._get_basin_data(basin,
+                                                        data.shape[0],
+                                                        data.shape[1])
                 y_temp = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
                 if self.period == 'train':
                     # Scaling the training data for each basin
@@ -134,27 +137,22 @@ class IMDGodavari(Dataset):
         y = torch.from_numpy(y.astype(np.float32))
         return x, y
 
-    def _get_basin_data(self, basin, data):
-        mask = self.preprocessor.create_basin_mask(basin)
-        x = copy.deepcopy(data)
-        x = np.multiply(x, mask)
+    def _get_basin_data(self, basin, num_samples, num_channels):
+        indices_X = self.preprocessor.create_basin_mask(basin)
         x_static_vec = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
         # for Efart! duplicating the static features to each of the input images
-        x_static = np.repeat([x_static_vec], x.shape[0], axis=0)
+        x_static = np.repeat([x_static_vec], num_samples, axis=0)
         _, self.num_attributes = x_static.shape
-
         if not self.include_static:
             self.num_attributes = 0
             x_static = None
-        num_features = x.shape[2] * x.shape[3]
-        print(['get_basin_data', x.shape[2], x.shape[3]])
-        x = np.reshape(x, (x.shape[0], x.shape[1] * num_features))
+        num_features = indices_X.shape[0] * indices_X.shape[1]
+        x = np.reshape(indices_X, (num_samples, num_channels * num_features))
         return x, x_static
 
-    def local_rescale(self, feature: np.ndarray, variable: str, mean_std=None) -> np.ndarray:
+    def local_rescale(self, feature: np.ndarray, mean_std=None) -> np.ndarray:
         """Rescale output features with local mean/std.
           :param mean_std:
-          :param variable:
           :param feature: Numpy array containing the feature(s) as matrix.
           param variable: Either 'inputs' or 'output' showing which feature will
           be normalized
@@ -168,7 +166,7 @@ class IMDGodavari(Dataset):
         for i, basin_name in enumerate(self.basin_list):
             if basin_name not in self.mean_y.keys():
                 raise RuntimeError(
-                    f"Unknown Basin {basin_name}, the trainig data was trained on {list(self.mean_y.keys())}")
+                    f"Unknown Basin {basin_name}, the training data was trained on {list(self.mean_y.keys())}")
             if i == 0:
                 y = feature[i * idx:(i + 1) * idx]
                 y = y * self.std_y[basin_name] + self.mean_y[basin_name]
@@ -194,7 +192,7 @@ class IMDGodavari(Dataset):
         else:
             # Rescaling the label
             if self.period == 'train':
-                y = self.local_rescale(y, 'output')
+                y = self.local_rescale(y)
             # getting the months for each date
             date_months = self.preprocessor.get_months_by_dates(start_date, end_date)
             # Adjusting for sequence length and lead

@@ -331,7 +331,7 @@ def main():
     for i in range(n_epochs):
         train_epoch(device, model, optimizer, tr_loader, loss_func, i + 1)
         obs, preds = eval_model(device, model, test_loader)
-        preds = ds_test.local_rescale(preds.cpu().numpy(), variable='output')
+        preds = ds_test.local_rescale(preds.cpu().numpy())
         nse = calc_nse(obs.numpy(), preds)
         tqdm.tqdm.write(f"Test NSE: {nse:.3f}")
         model_name = "epoch_{:d}_nse_{:.3f}.ckpt".format(i + 1, nse)

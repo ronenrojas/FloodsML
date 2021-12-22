@@ -40,11 +40,11 @@ class CNNLSTM(nn.Module):
         # getting the "image" part of the input
         # (removing the last 4 static features)
         image = x[:, :, :self.num_channels * self.lat * self.lon]
-        # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT*W_LON)
+        # reshaping the image to 4 dimensional tensor of (batch_size, time_steps, num_channels, H_LAT*W_LON)
         image = image.view(batch_size, time_steps, self.num_channels, self.lat * self.lon)
-        # reshaping the image to 5 dimensional tensor of (batch_size, time_steps, num_channles, H_LAT, W_LON)
+        # reshaping the image to 5 dimensional tensor of (batch_size, time_steps, num_channels, H_LAT, W_LON)
         image = image.view(batch_size, time_steps, self.num_channels, self.lat, self.lon)
-        # reshaping the image to 4 dimensional tensor of (batch_size * time_steps, num_channles, H_LAT, W_LON)
+        # reshaping the image to 4 dimensional tensor of (batch_size * time_steps, num_channels, H_LAT, W_LON)
         c_in = image.view(batch_size * time_steps, self.num_channels, self.lat, self.lon)
         # CNN part
         c_out = self.cnn(c_in)

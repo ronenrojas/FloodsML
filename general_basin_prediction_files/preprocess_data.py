@@ -128,7 +128,7 @@ class Preprocessor:
     and 0 otherwise
     """
 
-    def create_basin_mask(self, basin):
+    def get_basin_indices_x(self, basin):
         # getting the grid describing the basin from file
         df = pd.read_csv(self.path_loc.format(basin), header=None, delim_whitespace=True)
         basin_lat_lot = df.values
@@ -147,7 +147,7 @@ class Preprocessor:
             indices_X[lat_lon_i, i, j] = [i, j]
         return indices_X
 
-    def get_basin_discharge(self, basin_name, start_date, end_date):
+    def get_basin_indices_y(self, basin_name, start_date, end_date):
         # Getting Discharge (how much water are running through
         # specific point / river in a given amount of time -
         # usually cubic metre per second)

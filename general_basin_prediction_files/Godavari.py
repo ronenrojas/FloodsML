@@ -96,27 +96,27 @@ class IMDGodavari(Dataset):
         self.num_features = data.shape[2] * data.shape[3]
         for i, basin in enumerate(self.basin_list):
             if i == 0:
-                indices_X, x_s = self._get_basin_data(basin,
-                                                      data.shape[0],
-                                                      data.shape[1])
-                indices_Y = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
+                indices_X, static_features = self.get_basin_indices_x_and_static_features(basin,
+                                                                              data.shape[0],
+                                                                              data.shape[1])
+                indices_Y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
                 if self.period == 'train':
                     # Scaling the training data for each basin
                     y = self._update_basin_dict(basin, y)
             else:
-                x_temp, x_s_temp = self._get_basin_data(basin,
-                                                        data.shape[0],
-                                                        data.shape[1])
-                y_temp = self.preprocessor.get_basin_discharge(basin, start_date, end_date)
+                x_temp, x_s_temp = self.get_basin_indices_x_and_static_features(basin,
+                                                                                data.shape[0],
+                                                                                data.shape[1])
+                y_temp = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
                 if self.period == 'train':
                     # Scaling the training data for each basin
                     y_temp = self._update_basin_dict(basin, y_temp)
                 x = np.concatenate([x, x_temp], axis=0)
                 if self.include_static:
-                    x_s = np.concatenate([x_s, x_s_temp], axis=0)
+                    static_features = np.concatenate([static_features, x_s_temp], axis=0)
                 y = np.concatenate([y, y_temp])
         if self.include_static:
-            x = np.concatenate([x, x_s], axis=1)
+            x = np.concatenate([x, static_features], axis=1)
         else:
             self.num_attributes = 0
         # normalize data, reshape for LSTM training and remove invalid samples
@@ -137,8 +137,8 @@ class IMDGodavari(Dataset):
         y = torch.from_numpy(y.astype(np.float32))
         return x, y
 
-    def _get_basin_data(self, basin, num_samples, num_channels):
-        indices_X = self.preprocessor.create_basin_mask(basin)
+    def get_basin_indices_x_and_static_features(self, basin, num_samples, num_channels):
+        indices_X = self.preprocessor.get_basin_indices_x(basin)
         x_static_vec = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
         # for Efart! duplicating the static features to each of the input images
         x_static = np.repeat([x_static_vec], num_samples, axis=0)

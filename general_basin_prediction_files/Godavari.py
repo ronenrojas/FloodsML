@@ -55,7 +55,7 @@ class IMDGodavari(Dataset):
         self.mask_list = mask_list
         self.num_features = None
         self.include_static = include_static
-        self.indices_X = np.zeros((preprocessor.lat_grid, preprocessor.lon_grid))
+        self.indices_X = np.zeros((len(preprocessor.lat_grid), len(preprocessor.lon_grid)))
         self.indices_X, self.indices_Y, self.static_features = self._load_data(all_data)
         self.all_data = all_data
         self.num_samples = self.x.shape[0]

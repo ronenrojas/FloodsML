@@ -18,11 +18,11 @@ from LSTM import CNNLSTM
 from preprocess_data import Preprocessor
 from Godavari import IMDGodavari
 
-parent_dir = str(Path(os.getcwd()))
+root_dir = str(Path(os.getcwd()).parent)
 RUN_LOCALLY = True
-PATH_ROOT = parent_dir + "/"  # Change only here the path
-PATH_DATA_FILE = parent_dir + str(Path("/" + "Data/raw_data_fixed_17532_3_22_38"))
-DIMS_JSON_FILE_PATH = parent_dir + "./dims_json.json"
+PATH_ROOT = root_dir + "/"  # Change only here the path
+PATH_DATA_FILE = root_dir + str(Path("/" + "Data/raw_data_fixed_17532_3_22_38"))
+DIMS_JSON_FILE_PATH = root_dir + "./dims_json.json"
 PATH_LABEL = PATH_ROOT + "Data/CWC/"
 PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"

@@ -136,14 +136,14 @@ class Preprocessor:
         # surrounding the basin
         # lon_grid is an 1-d array that describing the vertical lines of the rectangle
         # surrounding the basin
-        width = self.lat_grid
-        height = self.lon_grid
+        width = len(self.lat_grid)
+        height = len(self.lon_grid)
         indices_X = np.ndarray((len(basin_lat_lot), width, height))
         # initialize a matrix with all zeros
         # for every pixel that is also in the basin area, set the indices of this pixel
         # (bottom right corner of the pixel) in the large matrix to True
         for lat_lon_i in basin_lat_lot:
-            i, j = self.get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], width, height)
+            i, j = self.get_index_by_lat_lon(lat_lon_i[0], lat_lon_i[1], self.lat_grid, self.lon_grid)
             indices_X[lat_lon_i, i, j] = [i, j]
         return indices_X
 

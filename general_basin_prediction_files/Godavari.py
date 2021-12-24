@@ -65,6 +65,8 @@ class IMDGodavari(Dataset):
     def __len__(self):
         return self.num_samples
 
+    # should return one sample
+    # the data is of shape - number of samples * number of channels * image_width * image_height
     def __getitem__(self, idx: int):
         x, y = self.all_data[self.indices_X[idx]], self.indices_Y[self.indices_Y[idx]]
         x = (x - self.min_values) / (self.max_values - self.min_values)
@@ -103,33 +105,16 @@ class IMDGodavari(Dataset):
         num_of_samples_curr = 0
         num_of_samples_prev = 0
         for i, basin in enumerate(self.basin_list):
-            if i == 0:
-                indices_X, static_features = self.get_basin_indices_x_and_static_features(basin,
-                                                                                          data.shape[0],
-                                                                                          data.shape[1])
-                num_of_samples_curr += len(indices_X)
-                indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
-                if self.period == 'train':
-                    y = self._update_basin_dict(y, basin,
-                                                starting_ind_basin=num_of_samples_prev,
-                                                end_ind_basin=num_of_samples_curr)
-            else:
-                indices_X_temp, static_features_temp = self.get_basin_indices_x_and_static_features(basin,
-                                                                                                    data.shape[0],
-                                                                                                    data.shape[1])
-                num_of_samples_curr += len(indices_X_temp)
-                indices_Y_temp, y_temp = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
-                if self.period == 'train':
-                    y_temp = self._update_basin_dict(y_temp, basin,
-                                                     starting_ind_basin=num_of_samples_prev,
-                                                     end_ind_basin=num_of_samples_curr)
-                indices_X = np.concatenate([indices_X, indices_X_temp], axis=0)
-                y = np.concatenate([y, y_temp])
-                indices_Y = np.concatenate([indices_Y, indices_Y_temp], axis=0)
+                indices_X, static_features = self.get_basin_indices_x_and_static_features(basin)
                 if self.include_static:
                     static_features = np.concatenate([static_features, static_features_temp], axis=0)
                 else:
                     self.num_attributes = 0
+                indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
+                if self.period == 'train':
+                    y = self.update_basin_dict(y, basin,
+                                               starting_ind_basin=num_of_samples_prev,
+                                               end_ind_basin=num_of_samples_curr)
             num_of_samples_prev = num_of_samples_curr
         # normalize data, reshape for LSTM training and remove invalid samples
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
@@ -141,18 +126,14 @@ class IMDGodavari(Dataset):
         # convert arrays to torch tensors
         return indices_X, indices_Y, static_features
 
-    def get_basin_indices_x_and_static_features(self, basin, num_samples, num_channels):
+    def get_basin_indices_x_and_static_features(self, basin):
         indices_X = self.preprocessor.get_basin_indices_x(basin)
-        x_static_vec = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
-        # for Efart! duplicating the static features to each of the input images
-        x_static = np.repeat([x_static_vec], num_samples, axis=0)
+        x_static = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
         _, self.num_attributes = x_static.shape
         if not self.include_static:
             self.num_attributes = 0
             x_static = None
-        num_features = indices_X.shape[0] * indices_X.shape[1]
-        x = np.reshape(indices_X, (num_samples, num_channels * num_features))
-        return x, x_static
+        return indices_X, x_static
 
     def local_rescale(self, feature: np.ndarray, mean_std=None) -> np.ndarray:
         """Rescale output features with local mean/std.
@@ -180,7 +161,7 @@ class IMDGodavari(Dataset):
                 y = np.concatenate([y, y_temp])
         return y
 
-    def _update_basin_dict(self, y, basin_name, starting_ind_basin, end_ind_basin):
+    def update_basin_dict(self, y, basin_name, starting_ind_basin, end_ind_basin):
         if self.mean_y is None:
             self.mean_y = {}
             self.std_y = {}
@@ -208,7 +189,7 @@ class IMDGodavari(Dataset):
             for j in range(len(self.basin_list)):
                 idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
                 if self.period == 'train':
-                    y[idx_temp] = self._update_basin_dict(self.basin_list[j], y[idx_temp])
+                    y[idx_temp] = self.update_basin_dict(self.basin_list[j], y[idx_temp])
                 ind_include += idx_temp
             x = x[ind_include, :, :]
             y = y[ind_include]

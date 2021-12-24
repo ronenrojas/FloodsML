@@ -138,14 +138,14 @@ class Preprocessor:
         # surrounding the basin
         width = len(self.lat_grid)
         height = len(self.lon_grid)
-        indices_X = np.ndarray((len(basin_lat_lot), self.num_channels, width, height))
         # initialize a matrix with all zeros
         # for every pixel that is also in the basin area, set the indices of this pixel
         # (bottom right corner of the pixel) in the large matrix to True
+        indices_X = np.zeros((width, height), dtype=bool)
         for index in range(len(basin_lat_lot)):
             i, j = self.get_index_by_lat_lon(basin_lat_lot[index][0], basin_lat_lot[index][1],
                                              self.lat_grid, self.lon_grid)
-            indices_X[index, i[0], j[0]] = [i[0], j[0]]
+            indices_X[i[0], j[0]] = True
         return indices_X
 
     def get_basin_indices_y(self, basin_name, start_date, end_date):

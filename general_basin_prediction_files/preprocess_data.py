@@ -160,55 +160,6 @@ class Preprocessor:
         y = np.array(data_discharge[3][idx_start:idx_end + 1])
         return indices_Y, y
 
-    @staticmethod
-    def reshape_data(x: np.ndarray, y: np.ndarray, seq_length: int) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Reshape matrix data into sample shape for LSTM training.
-        :param x: Matrix containing input features column wise and time steps row wise
-        :param y: Matrix containing the output feature.
-        :param seq_length: Length of look back days for one day of prediction
-        :return: Two np.ndarrays, the first of shape (samples, length of sequence,
-          number of features), containing the input data for the LSTM. The second
-          of shape (samples, 1) containing the expected output for each input
-          sample.
-        """
-        num_samples, num_features = x.shape
-        x_new = np.zeros((num_samples - seq_length + 1, seq_length, num_features))
-        y_new = np.zeros((num_samples - seq_length + 1, 1))
-        for i in range(0, x_new.shape[0]):
-            x_new[i, :, :num_features] = x[i:i + seq_length, :]
-            y_new[i, :] = y[i + seq_length - 1, 0]
-        return x_new, y_new
-
-    def reshape_data_basins(self, x: np.ndarray, y: np.ndarray, seq_length: int,
-                            basin_list: list, lead: int) -> Tuple[
-        np.ndarray, np.ndarray]:
-        """
-        Reshape matrix data into sample shape for LSTM training.
-        :param lead:
-        :param basin_list:
-        :param x: Matrix containing input features column wise and time steps row wise
-        :param y: Matrix containing the output feature.
-        :param seq_length: Length of look back days for one day of prediction
-        :return: Two np.ndarrays, the first of shape (samples, length of sequence,
-          number of features), containing the input data for the LSTM. The second
-          of shape (samples, 1) containing the expected output for each input
-          sample.
-        """
-        n_basins = len(basin_list)
-        data_size = int(x.shape[0] / n_basins)
-
-        for i in range(n_basins):
-            if i == 0:
-                x_new, y_new = self.reshape_data(x[:data_size - lead, :], y[lead:data_size], seq_length)
-            else:
-                idx = i * data_size
-                x_temp, y_temp = self.reshape_data(x[idx:idx - lead + data_size, :], y[idx + lead:idx + data_size],
-                                                   seq_length)
-                x_new = np.concatenate([x_new, x_temp], axis=0)
-                y_new = np.concatenate([y_new, y_temp], axis=0)
-        return x_new, y_new
-
     def get_index_by_date(self, date_in):
         start_date_pd = pd.to_datetime(datetime.datetime(self.data_start_date[0], self.data_start_date[1],
                                                          self.data_start_date[2], 0, 0))

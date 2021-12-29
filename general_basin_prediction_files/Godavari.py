@@ -38,6 +38,9 @@ class IMDGodavari(Dataset):
         :param period: (optional) One of ['train', 'eval']. None loads the entire time series.
         :param dates: (optional) List of the start and end date of the discharge period that is used.
         """
+        self.num_samples = 0
+        self.x = None
+        self.y = None
         self.num_attributes = 0
         self.basin_list = basin_list
         self.preprocessor = preprocessor
@@ -55,76 +58,72 @@ class IMDGodavari(Dataset):
         self.mask_list = mask_list
         self.num_features = None
         self.include_static = include_static
-        self.indices_X = np.zeros((len(preprocessor.lat_grid), len(preprocessor.lon_grid)))
-        self.indices_X, self.indices_Y, self.static_features = self._load_data(all_data)
-        self.all_data = all_data
-        self.num_samples = self.x.shape[0]
-        self.indices_Y = np.zeros((self.num_samples,))
+        self.sample_to_basin = {}
         self.start_end_indices_basins = {}
+        self.load_data(all_data)
+
 
     def __len__(self):
         return self.num_samples
 
-    # should return one sample
-    # the data is of shape - number of samples * number of channels * image_width * image_height
+    # The number of samples is: (the original number of samples - sequence length) * number of basins
+    # each samples is of size: (sequence length * number of features - (width * height * channels + static features))
     def __getitem__(self, idx: int):
-        x, y = self.all_data[self.indices_X[idx]], self.indices_Y[self.indices_Y[idx]]
-        x = (x - self.min_values) / (self.max_values - self.min_values)
-        for bounds in self.start_end_indices_basins.keys():
-            if bounds[0] <= idx <= bounds[1]:
-                mu_y = self.mean_y[self.start_end_indices_basins[bounds]]
-                std_y = self.std_y[self.start_end_indices_basins[bounds]]
-                y = ((y - mu_y) / std_y)
-        return x, y
+        for key in self.start_end_indices_basins.keys():
+            start_ind = key[0]
+            end_ind = key[1]
+            indices_X, static_features, min_values, max_values = self.sample_to_basin[key]
+            if idx in range(start_ind, end_ind):
+                x_new = self.x[start_ind:end_ind, :, :, :] * indices_X
+                x_new[:, 1, :, :] = (x_new[:, 1, :, :] - min_values)
+                x_new[:, 1, :, :] /= max_values
+                y_new = self.start_end_indices_basins[key][1]
+        return x_new, y_new
 
-    def _load_data(self, all_data):
-        """Load input and output data from text files.    """
+    def load_data(self, all_data):
+        """Load input and output data from text files"""
         start_date, end_date = self.dates
         idx_s = self.preprocessor.get_index_by_date(start_date)[0]
         idx_e = self.preprocessor.get_index_by_date(end_date)[0]
-        # Data is reduced to the dates and features subspace.
-        # the features are the channels (3 features - precipitation,
-        # minimum temperature, maximum temperature)
+        # cropping the data to only the interested dates and the interested idx_features,
+        # the idx_features are the "channels" (3 features - precipitation minimum temperature, maximum temperature)
         data = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
+        self.x = data
+        # the number of samples (each sample is form specific date)
         time_span = data.shape[0]
-        if self.period == 'train':
-            # axis = 0 - getting the minimum / maximum of first dimension
-            # ("rows", but here it's not really rows because it's a tensor and not a matrix)
-            # axis = 1 - getting the minimum / maximum of second dimension
-            # ("columns", but here it's not really columns because it's a tensor and not a matrix)
-            # Normalizing the data. There are two typical types of normalization:
-            # 1. (min - max normalization) - subtract the min and divide by (max - min)
-            # 2. (std - mean normalization) - subtract the mean and divide by the std
-
-            # specifically, here we are getting the minimum / maximum
-            # of all the time stamps + H_LAT + W_LON per channel - i.e. - for all the channels
-            # we are calculating the min / max over all the other dimensions.
-            self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
-            self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
-        self.num_features = data.shape[2] * data.shape[3]
-        num_of_samples_curr = 0
-        num_of_samples_prev = 0
+        self.num_features = data.shape[1] * data.shape[2] * data.shape[3]
         for i, basin in enumerate(self.basin_list):
-                indices_X, static_features = self.get_basin_indices_x_and_static_features(basin)
-                if self.include_static:
-                    static_features = np.concatenate([static_features, static_features_temp], axis=0)
-                else:
-                    self.num_attributes = 0
+            indices_X, static_features = self.get_basin_indices_x_and_static_features(basin)
+            # calculating the min / max over all the channels - i.e. -
+            # over all the timestamps + H_LAT + W_LON per channel, to later normalize the data.
+            min_values_over_timestamps = data.min(axis=0)
+            min_values_over_timestamps_in_basin = min_values_over_timestamps[:, ...] * indices_X
+            min_values = min_values_over_timestamps_in_basin.min(axis=1).min(axis=1)
+
+            max_values_over_timestamps = data.max(axis=0)
+            max_values_over_timestamps_in_basin = max_values_over_timestamps[:, ...] * indices_X
+            max_values = max_values_over_timestamps_in_basin.max(axis=1).max(axis=1)
+
+            self.sample_to_basin[(i * (time_span - self.seq_length + 1 - self.lead),
+                                  (i + 1) * (time_span - self.seq_length + 1 - self.lead) - 1)] = \
+                (indices_X, static_features, min_values, max_values)
+            if self.period == 'train':
                 indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
-                if self.period == 'train':
-                    y = self.update_basin_dict(y, basin,
-                                               starting_ind_basin=num_of_samples_prev,
-                                               end_ind_basin=num_of_samples_curr)
-            num_of_samples_prev = num_of_samples_curr
-        # normalize data, reshape for LSTM training and remove invalid samples
+                mu_y = y.mean()
+                std_y = y.std()
+                self.start_end_indices_basins[(i * (time_span - self.seq_length + 1 - self.lead),
+                                               (i + 1) * (time_span - self.seq_length + 1 - self.lead) - 1)] = \
+                    (indices_Y, (y - mu_y / std_y))
+            if not self.include_static:
+                self.num_attributes = 0
+
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
         print("Number of features should be: num_features + num_attributes= {0}".format(
             self.num_features + self.num_attributes))
         print("Number of sample should be: (time_span - sequence_len + 1 -lead) x num_basins= {0}".format(
             (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)))
-        # convert arrays to torch tensors
-        return indices_X, indices_Y, static_features
+        self.num_samples = (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)
 
     def get_basin_indices_x_and_static_features(self, basin):
         indices_X = self.preprocessor.get_basin_indices_x(basin)
@@ -160,17 +159,6 @@ class IMDGodavari(Dataset):
                 y_temp = y_temp * self.std_y[basin_name] + self.mean_y[basin_name]
                 y = np.concatenate([y, y_temp])
         return y
-
-    def update_basin_dict(self, y, basin_name, starting_ind_basin, end_ind_basin):
-        if self.mean_y is None:
-            self.mean_y = {}
-            self.std_y = {}
-        mu_y = y.mean()
-        std_y = y.std()
-        self.start_end_indices_basins[(starting_ind_basin, end_ind_basin)] = basin_name
-        self.mean_y[basin_name] = mu_y
-        self.std_y[basin_name] = std_y
-        return (y - mu_y) / std_y
 
     def get_monthly_data(self, x, y, start_date, end_date):
         if self.months is None:

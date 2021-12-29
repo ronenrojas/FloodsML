@@ -62,12 +62,15 @@ class IMDGodavari(Dataset):
         self.start_end_indices_basins = {}
         self.load_data(all_data)
 
+    # The number of samples is: (the original number of samples (timestamps) - sequence length) * number of basins
+    # each samples is of size: (sequence length * number of features ((width * height * channels) + static features))
     def __len__(self):
         return self.num_samples
 
-    # The number of samples is: (the original number of samples - sequence length) * number of basins
-    # each samples is of size: (sequence length * number of features - (width * height * channels + static features))
+    # each call to __getitem__ should return ONE sample, which is of size (sequence length * number of features)
     def __getitem__(self, idx: int):
+        x_new = None
+        y_new = None
         for key in self.start_end_indices_basins.keys():
             start_ind = key[0]
             end_ind = key[1]
@@ -84,10 +87,15 @@ class IMDGodavari(Dataset):
                 np.concatenate([x_new, static_features], axis=2)
                 y_new = self.start_end_indices_basins[key][1][idx: idx + self.seq_length]
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
-                if x_new.shape[0] == 0:
-                    print("Error, the index is: {}", idx)
         x_new = torch.from_numpy(x_new).float()
         y_new = torch.from_numpy(y_new).float()
+        end_indices = [key[1] for key in self.start_end_indices_basins.keys()]
+        start_indices = [key[0] for key in self.start_end_indices_basins.keys()]
+        if x_new is None or y_new is None:
+            print("Error - the requested to be retrieved is not in the range of start_ind, end_ind. "
+                  "The requested index is: {}, the start indices are: {}, the end indices are: {}".format(idx,
+                                                                                                          start_indices,
+                                                                                                          end_indices))
         return x_new, y_new
 
     def load_data(self, all_data):

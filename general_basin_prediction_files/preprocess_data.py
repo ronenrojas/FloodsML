@@ -118,17 +118,16 @@ class Preprocessor:
         lat_i, lon_i = Preprocessor.get_index_by_lat_lon(lat, lon, lat_grid=lat_grid, lon_grid=lon_grid)
         return date_i, lat_i, lon_i
 
-    """
-    generating the "image" basin from a larger "image" by mask:
-    the lat_grid and lon_grid are two 1-d arrays that construct a matrix of points
-    that depicting the bottom right corner of every "pixel" of the large area.
-    from this large area, we are checking if the "pixels" of the basins smaller area
-    are in this large area and creating a corresponding mask.
-    The mask is in the size of the large area - 1 if this pixel in also in the basin's area,
-    and 0 otherwise
-    """
-
     def get_basin_indices_x(self, basin):
+        """
+        generating the "image" basin from a larger "image" by mask:
+        the lat_grid and lon_grid are two 1-d arrays that construct a matrix of points
+        that depicting the bottom right corner of every "pixel" of the large area.
+        from this large area, we are checking if the "pixels" of the basins smaller area
+        are in this large area and creating a corresponding mask.
+        The mask is in the size of the large area - 1 if this pixel in also in the basin's area,
+        and 0 otherwise
+        """
         # getting the grid describing the basin from file
         df = pd.read_csv(self.path_loc.format(basin), header=None, delim_whitespace=True)
         basin_lat_lot = df.values

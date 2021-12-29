@@ -362,7 +362,7 @@ def main():
                          include_static=include_static)
     val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)
     obs, preds = eval_model(device, model, val_loader)
-    preds = ds_val.local_rescale(preds.cpu().numpy(), variable='output')
+    preds = ds_val.local_rescale(preds.cpu().numpy())
     obs = obs.numpy()
     nse = calc_nse(obs, preds)
     pb95, pb5, total_b = calc_bias(obs, preds)

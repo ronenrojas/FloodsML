@@ -62,7 +62,6 @@ class IMDGodavari(Dataset):
         self.start_end_indices_basins = {}
         self.load_data(all_data)
 
-
     def __len__(self):
         return self.num_samples
 
@@ -74,10 +73,21 @@ class IMDGodavari(Dataset):
             end_ind = key[1]
             indices_X, static_features, min_values, max_values = self.sample_to_basin[key]
             if idx in range(start_ind, end_ind):
-                x_new = self.x[start_ind:end_ind, :, :, :] * indices_X
-                x_new[:, 1, :, :] = (x_new[:, 1, :, :] - min_values)
-                x_new[:, 1, :, :] /= max_values
-                y_new = self.start_end_indices_basins[key][1]
+                idx = idx - start_ind
+                x_new = self.x[idx: idx + self.seq_length, :, :, :] * indices_X
+                x_new[:, 0, :, :] = (x_new[:, 0, :, :] - min_values)
+                x_new[:, 0, :, :] /= max_values
+                x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
+                static_features = static_features[np.newaxis, np.newaxis, :]
+                static_features = np.repeat(static_features, x_new.shape[0], axis=0)
+                static_features = np.repeat(static_features, x_new.shape[1], axis=1)
+                np.concatenate([x_new, static_features], axis=2)
+                y_new = self.start_end_indices_basins[key][1][idx: idx + self.seq_length]
+                x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
+                if x_new.shape[0] == 0:
+                    print("Error, the index is: {}", idx)
+        x_new = torch.from_numpy(x_new).float()
+        y_new = torch.from_numpy(y_new).float()
         return x_new, y_new
 
     def load_data(self, all_data):
@@ -128,7 +138,7 @@ class IMDGodavari(Dataset):
     def get_basin_indices_x_and_static_features(self, basin):
         indices_X = self.preprocessor.get_basin_indices_x(basin)
         x_static = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
-        _, self.num_attributes = x_static.shape
+        self.num_attributes = len(x_static)
         if not self.include_static:
             self.num_attributes = 0
             x_static = None

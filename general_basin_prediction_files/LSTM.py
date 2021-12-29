@@ -20,7 +20,7 @@ class CNNLSTM(nn.Module):
         self.cnn = CNN(num_channels=num_channels, output_size_cnn=(input_size - num_attributes),
                        image_input_size=image_input_size)
         # create required layer
-        self.lstm = nn.LSTM(input_size=input_size, hidden_size=self.hidden_size, num_layers=num_layers, bias=True,
+        self.lstm = nn.LSTM(input_size=(input_size - num_attributes), hidden_size=self.hidden_size, num_layers=num_layers, bias=True,
                             batch_first=True)
         self.dropout = nn.Dropout(p=self.dropout_rate)
         self.fc = nn.Linear(in_features=self.hidden_size, out_features=1)

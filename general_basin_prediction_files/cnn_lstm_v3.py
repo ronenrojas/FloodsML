@@ -39,9 +39,9 @@ parent_dir = Path(os.getcwd()).__str__()
 #### Definitions ####
 RUN_LOCALLY = True
 
-PATH_ROOT = Path(os.getcwd()).__str__() + "/"  # Change only here the path
-PATH_DATA_FILE = PATH_ROOT if not RUN_LOCALLY else parent_dir + Path(
-    "/" + "Data/raw_data_fixed_17532_3_22_38").__str__()
+root_dir = str(Path(os.getcwd()).parent)
+PATH_ROOT = root_dir + "/"  # Change only here the path
+PATH_DATA_FILE = PATH_ROOT if not RUN_LOCALLY else Path(PATH_ROOT + "/" + "Data/raw_data_fixed_17532_3_22_38").__str__()
 PATH_LABEL = PATH_ROOT + "Data/CWC/"
 PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"
@@ -64,6 +64,61 @@ W_LON = len(LON_GRID)
 DATA_START_DATE = (1967, 1, 1)
 DATA_END_DATE = (2014, 12, 31)
 
+data_raw = np.fromfile(PATH_DATA_FILE)
+all_data = np.fromfile(PATH_DATA_FILE).reshape((DATA_LEN, NUM_CHANNELS, H_LAT, W_LON))
+
+# Number of GPUs available. Use 0 for CPU mode.
+ngpu = 1
+device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+# Set random seed for reproducibility
+# manualSeed = 999
+# #manualSeed = random.randint(1, 10000) # use if you want new results
+# #print("Random Seed: ", manualSeed)
+# random.seed(manualSeed)
+# torch.manual_seed(manualSeed)
+
+#################################
+###### Meta parameters ##########
+#################################
+hidden_size = 128  # Number of LSTM cells
+dropout_rate = 0.01  # Dropout rate of the final fully connected Layer [0.0, 1.0]
+# learning_rate = 2e-3 # Learning rate used to update the weights
+learning_rate = 1e-4  # Learning rate used to update the weights
+sequence_length = 30  # Length of the meteorological record provided to the network
+num_layers = 2  # Number of LSTM cells
+lead = 0  # 1
+cnn_outputsize = 20
+num_hidden_layers = 3
+num_hidden_units = 128
+# Choose features #
+use_perc = True
+# maximum temprature in a given day
+use_t_max = False
+# minimum temprature in a given day
+use_t_min = False
+idx_features = [use_perc, use_t_max, use_t_min]
+# Choose basin #
+# basin_list = ['Mancherial', 'Perur' ,'Pathagudem','Polavaram', 'Tekra']
+basin_list = ['Tekra', 'Perur']
+###############
+# Data set up #
+###############
+INCLUDE_STATIC = True
+
+
+def create_catchment_dict(sheet_path):
+    df = pd.read_excel(sheet_path, index_col=0).dropna().T
+    means = df.mean().values
+    stds = df.std(ddof=0).values
+    x = df.values
+    catch_dict = {k: x[i, :] for i, k in enumerate(df.T.columns)}
+    catch_dict['mean'] = means
+    catch_dict['std'] = stds
+    return catch_dict
+
+
+CATCHMENT_DICT = create_catchment_dict(PATH_CATCHMENTS)
+
 
 def get_index(data, date_input):
     year, month, day = date_input
@@ -77,17 +132,6 @@ def get_geo_raw_data(lat, lon, start_date, end_date):
     x = np.array(data[3][idx_start:idx_end + 1])
     x = np.concatenate([[x], [np.array(data[4][idx_start:idx_end + 1])], [np.array(data[5][idx_start:idx_end + 1])]]).T
     return x
-
-
-def create_catchment_dict(sheet_path):
-    df = pd.read_excel(sheet_path, index_col=0).dropna().T
-    means = df.mean().values
-    stds = df.std(ddof=0).values
-    x = df.values
-    catch_dict = {k: x[i, :] for i, k in enumerate(df.T.columns)}
-    catch_dict['mean'] = means
-    catch_dict['std'] = stds
-    return catch_dict
 
 
 def get_date_range_and_idx(start_date, end_date, date_range):
@@ -673,346 +717,305 @@ def calc_vol_qp(obs: np.array) -> float:
 
     return vol, qp
 
-data_raw = np.fromfile(PATH_DATA_FILE)
-all_data = np.fromfile(PATH_DATA_FILE).reshape((DATA_LEN, NUM_CHANNELS, H_LAT, W_LON))
 
-# Number of GPUs available. Use 0 for CPU mode.
-ngpu = 1
-device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
-# Set random seed for reproducibility
-# manualSeed = 999
-# #manualSeed = random.randint(1, 10000) # use if you want new results
-# #print("Random Seed: ", manualSeed)
-# random.seed(manualSeed)
-# torch.manual_seed(manualSeed)
+def main():
+    # Training data
+    # start_date = (1967, 1, 1)
+    # end_date = (1999, 12, 31)
+    start_date = (2000, 1, 1)
+    end_date = (2009, 12, 31)
+    months_lst = [6, 7, 8, 9, 10]
 
-#################################
-###### Meta parameters ##########
-#################################
-hidden_size = 128  # Number of LSTM cells
-dropout_rate = 0.01  # Dropout rate of the final fully connected Layer [0.0, 1.0]
-# learning_rate = 2e-3 # Learning rate used to update the weights
-learning_rate = 1e-4  # Learning rate used to update the weights
-sequence_length = 30  # Length of the meteorological record provided to the network
-num_layers = 2  # Number of LSTM cells
-lead = 0  # 1
-cnn_outputsize = 20
-num_hidden_layers = 3
-num_hidden_units = 128
+    print('Train dataset\n===============================')
+    ds_train = IMDGodavari(all_data,
+                           basin_list=basin_list,
+                           seq_length=sequence_length,
+                           period="train",
+                           dates=[start_date, end_date],
+                           months=months_lst,
+                           idx=idx_features,
+                           lead=lead,
+                           include_static=INCLUDE_STATIC)
+    tr_loader = DataLoader(ds_train, batch_size=64, shuffle=True)
 
-### Choose features ###
-use_perc = True
-# maximum temprature in a given day
-use_t_max = False
-# minimum temprature in a given day
-use_t_min = False
-idx_features = [use_perc, use_t_max, use_t_min]
-### Choose basin ### 
-# basin_list = ['Mancherial', 'Perur' ,'Pathagudem','Polavaram', 'Tekra']
-basin_list = ['Tekra', 'Perur']
+    # Test data. We use the feature min/max of the training period for normalization
+    # start_date = (1995, 1, 1)
+    # end_date = (1999, 12, 31)
+    start_date = (2000, 1, 1)
+    end_date = (2009, 12, 31)
+    print('\nTest dataset\n===============================')
+    ds_test = IMDGodavari(all_data, basin_list,
+                          seq_length=sequence_length,
+                          period="eval",
+                          dates=[start_date, end_date],
+                          months=months_lst,
+                          idx=idx_features, lead=lead,
+                          min_values=ds_train.get_min(),
+                          max_values=ds_train.get_max(),
+                          mean_y=ds_train.get_mean_y(),
+                          std_y=ds_train.get_std_y(),
+                          include_static=INCLUDE_STATIC)
+    test_loader = DataLoader(ds_test, batch_size=2048, shuffle=False)
 
-##############
-# Data set up#
-##############
-CATCHMENT_DICT = create_catchment_dict(PATH_CATCHMENTS)
-INCLUDE_STATIC = True
+    #########################
+    # Model, Optimizer, Loss#
+    #########################
 
-# Training data
-# start_date = (1967, 1, 1)
-# end_date = (1999, 12, 31)
-start_date = (2000, 1, 1)
-end_date = (2009, 12, 31)
-months_lst = [6, 7, 8, 9, 10]
+    # Here we create our model
+    # attributes == static features
+    num_attributes = CATCHMENT_DICT['Tekra'].size
 
-print('Train dataset\n===============================')
-ds_train = IMDGodavari(all_data,
-                       basin_list=basin_list,
-                       seq_length=sequence_length,
-                       period="train",
-                       dates=[start_date, end_date],
-                       months=months_lst,
-                       idx=idx_features,
-                       lead=lead,
-                       include_static=INCLUDE_STATIC)
-tr_loader = DataLoader(ds_train, batch_size=64, shuffle=True)
+    if not INCLUDE_STATIC:
+        num_attributes = 0
 
-# Test data. We use the feature min/max of the training period for normalization
-# start_date = (1995, 1, 1)
-# end_date = (1999, 12, 31)
-start_date = (2000, 1, 1)
-end_date = (2009, 12, 31)
-print('\nTest dataset\n===============================')
-ds_test = IMDGodavari(all_data, basin_list,
-                      seq_length=sequence_length,
-                      period="eval",
-                      dates=[start_date, end_date],
-                      months=months_lst,
-                      idx=idx_features, lead=lead,
-                      min_values=ds_train.get_min(),
-                      max_values=ds_train.get_max(),
-                      mean_y=ds_train.get_mean_y(),
-                      std_y=ds_train.get_std_y(),
-                      include_static=INCLUDE_STATIC)
-test_loader = DataLoader(ds_test, batch_size=2048, shuffle=False)
+    # idx_features - a True / False list over the 3 features (channels) of each "image"
+    input_size = (sum(idx_features) * W_LON * H_LAT + num_attributes) * sequence_length
+    model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
+                    dropout_rate=dropout_rate, num_channels=sum(idx_features),
+                    num_attributes=num_attributes).to(device)
+    # model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,
+    # num_hidden_units=num_hidden_units,
+    # dropout_rate=dropout_rate).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    loss_func = nn.MSELoss()
 
-#########################
-# Model, Optimizer, Loss#
-#########################
+    n_epochs = 50  # Number of training epochs
 
-# Here we create our model
-# attributes == static features
-num_attributes = CATCHMENT_DICT['Tekra'].size
+    # Creating the checkpoint folders
+    datetime_israel = datetime.datetime.now(pytz.timezone('Israel'))
+    path_train_ckpt = PATH_MODEL + datetime_israel.strftime("%Y_%m_%d-%H-%M-%S/")
+    pathlib.Path(path_train_ckpt).mkdir(parents=True, exist_ok=True)
 
-if not INCLUDE_STATIC:
-    num_attributes = 0
+    for i in range(n_epochs):
+        train_epoch(model, optimizer, tr_loader, loss_func, i + 1)
+        obs, preds = eval_model(model, test_loader)
+        preds = ds_test.local_rescale(preds.cpu().numpy(), variable='output')
+        nse = calc_nse(obs.numpy(), preds)
+        tqdm.tqdm.write(f"Test NSE: {nse:.3f}")
+        model_name = "epoch_{:d}_nse_{:.3f}.ckpt".format(i + 1, nse)
+        torch.save(model, path_train_ckpt + model_name)
+        last_model_path = path_train_ckpt + model_name
 
-# idx_features - a True / False list over the 3 features (channels) of each "image"
-input_size = (sum(idx_features) * W_LON * H_LAT + num_attributes) * sequence_length
-model = CNNLSTM(input_size=cnn_outputsize, num_layers=num_layers, hidden_size=hidden_size,
-                dropout_rate=dropout_rate, num_channels=sum(idx_features),
-                num_attributes=num_attributes).to(device)
-# model = DNN(input_size=input_size, num_hidden_layers=num_hidden_layers,
-# num_hidden_units=num_hidden_units,
-# dropout_rate=dropout_rate).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-loss_func = nn.MSELoss()
+    # Evaluate on test set
+    # Validation data. We use the feature means/stds of the training period for normalization
+    # Training data
 
-n_epochs = 50  # Number of training epochs
+    # Use existing model
+    # CNNLSTM:
+    # path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
+    # model = torch.load(path_to_ckpt)
+    # CNNLSTM monsoon
+    # path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_23-18-29-43/epoch_50_nse_0.588.ckpt'
+    # model = torch.load(path_to_ckpt)
+    # DNN:
+    # path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_19-15-36-05/epoch_50_nse_0.881.ckpt'
+    # model = torch.load(path_to_ckpt)
 
-# Creating the checkpoint folders
-datetime_israel = datetime.datetime.now(pytz.timezone('Israel'))
-path_train_ckpt = PATH_MODEL + datetime_israel.strftime("%Y_%m_%d-%H-%M-%S/")
-pathlib.Path(path_train_ckpt).mkdir(parents=True, exist_ok=True)
+    # start_date = (2000, 1, 1)
+    # end_date = (2014, 12, 31)
+    start_date = (2010, 1, 1)
+    end_date = (2014, 12, 31)
+    months_lst = [6, 7, 8, 9, 10]
 
-for i in range(n_epochs):
-    train_epoch(model, optimizer, tr_loader, loss_func, i + 1)
-    obs, preds = eval_model(model, test_loader)
-    preds = ds_test.local_rescale(preds.cpu().numpy(), variable='output')
-    nse = calc_nse(obs.numpy(), preds)
-    tqdm.tqdm.write(f"Test NSE: {nse:.3f}")
-    model_name = "epoch_{:d}_nse_{:.3f}.ckpt".format(i + 1, nse)
-    torch.save(model, path_train_ckpt + model_name)
-    last_model_path = path_train_ckpt + model_name
+    Validation_basin = ["Tekra"]
+    ds_val = IMDGodavari(all_data,
+                         basin_list=Validation_basin,
+                         seq_length=sequence_length,
+                         period="eval",
+                         dates=[start_date, end_date],
+                         months=months_lst,
+                         idx=idx_features,
+                         lead=lead,
+                         min_values=ds_train.get_min(),
+                         max_values=ds_train.get_max(),
+                         mean_y=ds_train.get_mean_y(),
+                         std_y=ds_train.get_std_y(),
+                         include_static=INCLUDE_STATIC)
+    val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)
+    # path_to_ckpt = "drive/MyDrive/Efrat/cnn_lstm/2021_08_10-14-48-52/epoch_15_nse_0.774.ckpt"
+    # path_to_ckpt = last_model_path
+    # if path_to_ckpt:
+    #   # 'drive/MyDrive/Efrat/model_lstm/2021_07_24-21-23-40/epoch_6_nse_0.825.ckpt'
+    #   model = torch.load(path_to_ckpt)
+    obs, preds = eval_model(model, val_loader)
+    preds = ds_val.local_rescale(preds.cpu().numpy(), variable='output')
+    obs = obs.numpy()
+    nse = calc_nse(obs, preds)
+    pb95, pb5, total_b = calc_bias(obs, preds)
+    # Plot results
+    start_date_tpl = ds_val.dates[0]
+    start_date = pd.to_datetime(
+        datetime.datetime(start_date_tpl[0], start_date_tpl[1], start_date_tpl[2], 0, 0)) + pd.DateOffset(
+        days=ds_val.seq_length + ds_val.lead)
+    end_date_tpl = ds_val.dates[1]
+    temp = pd.to_datetime(datetime.datetime(end_date_tpl[0], end_date_tpl[1], end_date_tpl[2], 0, 0))
+    end_date = temp + pd.DateOffset(days=1)
+    date_range = pd.date_range(start_date, end_date)
+    # months = get_months_by_dates(start_date, end_date)
+    ind_include = [i for i in range(0, len(date_range)) if date_range[i].month in months_lst]
+    date_range = date_range[ind_include]
+    fig, ax = plt.subplots(figsize=(20, 6))
+    ax.plot(date_range, obs, label="observation")
+    ax.plot(date_range, preds, label="prediction")
+    ax.legend()
+    ax.set_title(
+        f"Basin {Validation_basin} - Validation set NSE: {nse:.3f}, 95bias: {pb95:.1f}, 5bias: {pb5:.3f} ,total bias : {total_b: .1f}%")
+    ax.xaxis.set_tick_params(rotation=90)
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=4))
+    ax.set_xlabel("Date")
+    ax.grid('on')
+    _ = ax.set_ylabel("Discharge (mm/d)")
 
-# Evaluate on test set
-# Validation data. We use the feature means/stds of the training period for normalization
-# Training data
+    """# Integrated gradients"""
 
-# Use existing model
-# CNNLSTM:
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
-# model = torch.load(path_to_ckpt)
-# CNNLSTM monsoon
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_23-18-29-43/epoch_50_nse_0.588.ckpt'
-# model = torch.load(path_to_ckpt)
-# DNN:
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_19-15-36-05/epoch_50_nse_0.881.ckpt'
-# model = torch.load(path_to_ckpt)
+    # Install package
+    from captum.attr import IntegratedGradients
 
+    # Calculate Integrated Gradients
+    # path_to_ckpt = last_model_path
+    # path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
+    # if path_to_ckpt:
+    #   model = torch.load(path_to_ckpt)
 
-# start_date = (2000, 1, 1)
-# end_date = (2014, 12, 31)
-start_date = (2010, 1, 1)
-end_date = (2014, 12, 31)
-months_lst = [6, 7, 8, 9, 10]
+    start_date_ig = (2012, 8, 26)
+    end_date_ig = (2012, 9, 5)
+    # start_date_ig = (start_date.year,start_date.month,start_date.day) # the full validation period
+    # end_date_ig = (end_date.year,end_date.month,end_date.day)
+    # new_date_range, idx =  get_date_range_and_idx(start_date_ig, end_date_ig, date_range)
+    # set model to eval mode (important for dropout)
+    model.eval()
+    model.cpu()
+    ig = IntegratedGradients(model, multiply_by_inputs=True)
+    basline = torch.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    integ_grad = np.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    for i in idx:
+        integ_grad += ig.attribute(ds_val.x[i:(i + 1), :, :], basline).numpy()
+    integ_grad = np.squeeze(integ_grad)
+    integ_grad /= len(idx)
+    _ = model.cuda()
 
-Validation_basin = ["Tekra"]
-ds_val = IMDGodavari(all_data,
-                     basin_list=Validation_basin,
-                     seq_length=sequence_length,
-                     period="eval",
-                     dates=[start_date, end_date],
-                     months=months_lst,
-                     idx=idx_features,
-                     lead=lead,
-                     min_values=ds_train.get_min(),
-                     max_values=ds_train.get_max(),
-                     mean_y=ds_train.get_mean_y(),
-                     std_y=ds_train.get_std_y(),
-                     include_static=INCLUDE_STATIC)
-val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)
-# path_to_ckpt = "drive/MyDrive/Efrat/cnn_lstm/2021_08_10-14-48-52/epoch_15_nse_0.774.ckpt"
-# path_to_ckpt = last_model_path   
-# if path_to_ckpt:
-#   # 'drive/MyDrive/Efrat/model_lstm/2021_07_24-21-23-40/epoch_6_nse_0.825.ckpt'
-#   model = torch.load(path_to_ckpt)
-obs, preds = eval_model(model, val_loader)
-preds = ds_val.local_rescale(preds.cpu().numpy(), variable='output')
-obs = obs.numpy()
-nse = calc_nse(obs, preds)
-pb95, pb5, total_b = calc_bias(obs, preds)
-# Plot results
-start_date_tpl = ds_val.dates[0]
-start_date = pd.to_datetime(
-    datetime.datetime(start_date_tpl[0], start_date_tpl[1], start_date_tpl[2], 0, 0)) + pd.DateOffset(
-    days=ds_val.seq_length + ds_val.lead)
-end_date_tpl = ds_val.dates[1]
-temp = pd.to_datetime(datetime.datetime(end_date_tpl[0], end_date_tpl[1], end_date_tpl[2], 0, 0))
-end_date = temp + pd.DateOffset(days=1)
-date_range = pd.date_range(start_date, end_date)
-# months = get_months_by_dates(start_date, end_date)
-ind_include = [i for i in range(0, len(date_range)) if date_range[i].month in months_lst]
-date_range = date_range[ind_include]
-fig, ax = plt.subplots(figsize=(20, 6))
-ax.plot(date_range, obs, label="observation")
-ax.plot(date_range, preds, label="prediction")
-ax.legend()
-ax.set_title(
-    f"Basin {Validation_basin} - Validation set NSE: {nse:.3f}, 95bias: {pb95:.1f}, 5bias: {pb5:.3f} ,total bias : {total_b: .1f}%")
-ax.xaxis.set_tick_params(rotation=90)
-ax.xaxis.set_major_locator(mdates.MonthLocator(interval=4))
-ax.set_xlabel("Date")
-ax.grid('on')
-_ = ax.set_ylabel("Discharge (mm/d)")
+    image_grad = integ_grad[:, :H_LAT * W_LON].reshape((sequence_length, H_LAT, W_LON))
+    time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])),
+                              axis=1)
+    spatial_image_grad = np.sum(image_grad, axis=0)
+    atrrib_grade = integ_grad[:, H_LAT * W_LON:]
 
-"""# Integrated gradients"""
+    # Calculate Integrated Gradients by quantile
 
-# Install package
-from captum.attr import IntegratedGradients
+    # path_to_ckpt = last_model_path
+    # path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
+    # if path_to_ckpt:
+    #   model = torch.load(path_to_ckpt)
 
-# Calculate Integrated Gradients
-# path_to_ckpt = last_model_path 
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
-# if path_to_ckpt:
-#   model = torch.load(path_to_ckpt)
+    predsmonsoon = preds[np.where((date_range.month >= 6) & (date_range.month <= 10))[0]]
+    obsmonsoon = obs[np.where((date_range.month >= 6) & (date_range.month <= 10))[0]]
+    threshq1 = np.percentile(predsmonsoon, 90)
+    threshq2 = np.percentile(predsmonsoon, 55)
+    # idx = np.asarray([i for i in range(0,len(preds)) if (preds[i]>threshq1) & (preds[i]<threshq2)])
+    idx = np.asarray([i for i in range(0, len(preds)) if (preds[i] > threshq1)])
+    # idx = np.where((preds>threshq1) & (preds<threshq2) & (date_range.month>=6) & (date_range.month<=10))[0]
+    print([threshq1, threshq2, idx.shape])
+    # set model to eval mode (important for dropout)
+    model.eval()
+    model.cpu()
+    ig = IntegratedGradients(model, multiply_by_inputs=True)
+    basline = torch.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    integ_grad = np.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    for i in idx:
+        # print (i)
+        integ_grad += ig.attribute(ds_val.x[i:(i + 1), :, :], basline).numpy()
+    integ_grad = np.squeeze(integ_grad)
+    integ_grad /= len(idx)
+    _ = model.cuda()
 
-start_date_ig = (2012, 8, 26)
-end_date_ig = (2012, 9, 5)
-# start_date_ig = (start_date.year,start_date.month,start_date.day) # the full validation period
-# end_date_ig = (end_date.year,end_date.month,end_date.day) 
-# new_date_range, idx =  get_date_range_and_idx(start_date_ig, end_date_ig, date_range)
-# set model to eval mode (important for dropout)
-model.eval()
-model.cpu()
-ig = IntegratedGradients(model, multiply_by_inputs=True)
-basline = torch.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
-integ_grad = np.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
-for i in idx:
-    integ_grad += ig.attribute(ds_val.x[i:(i + 1), :, :], basline).numpy()
-integ_grad = np.squeeze(integ_grad)
-integ_grad /= len(idx)
-_ = model.cuda()
+    image_grad = integ_grad[:, :H_LAT * W_LON].reshape((sequence_length, H_LAT, W_LON))
+    time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])),
+                              axis=1)
+    spatial_image_grad = np.sum(image_grad, axis=0)
+    atrrib_grade = integ_grad[:, H_LAT * W_LON:]
 
-image_grad = integ_grad[:, :H_LAT * W_LON].reshape((sequence_length, H_LAT, W_LON))
-time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
-spatial_image_grad = np.sum(image_grad, axis=0)
-atrrib_grade = integ_grad[:, H_LAT * W_LON:]
+    # integ_file = PATH_ROOT + "Out/integ_grad_2000_2014"
+    # np.save(file=integ_file, arr=integ_grad)
 
-# Calculate Integrated Gradients by quantile
+    # Plot Integrated Gradients - Spatial
+    sequence_length_small = 9
+    image_grad_small = image_grad[sequence_length - sequence_length_small:, :]
+    n_w_win = 3
+    n_h_win = int((sequence_length_small + 1) / n_w_win)
+    fig, ax = plt.subplots(n_h_win, n_w_win, figsize=(10 * n_h_win, 6 * n_w_win))
+    max_v = abs(image_grad_small).max()
+    min_v = -max_v
+    for i in range(sequence_length_small):
+        ax.flat[i].set_title(f'Day {i - sequence_length_small}')
+        df = pd.DataFrame(image_grad_small[i, :], index=list(LAT_GRID), columns=list(LON_GRID))
+        sns.heatmap(df[::-1], ax=ax.flat[i], vmin=min_v, vmax=max_v, square=True, cmap='RdYlBu')
 
-# path_to_ckpt = last_model_path 
-# path_to_ckpt = 'drive/MyDrive/RonenRojasEfratMorin/Code/cnn_lstm/2021_08_17-09-30-35/epoch_50_nse_0.798.ckpt'
-# if path_to_ckpt:
-#   model = torch.load(path_to_ckpt)
+    # plot without catchment attributes
+    with plt.style.context('ggplot'):
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15))
+        # ax1.plot(new_date_range, obs[idx], label="observation")
+        # ax1.plot(new_date_range, preds[idx], label="prediction")
+        # ax1.plot(idx, obs[idx], 'x', label="observation")
+        # ax1.plot(idx, preds[idx],'x', label="prediction")
+        ax1.plot(idx, obs[idx], 'x', label="observation")
+        ax1.plot(idx, preds[idx], 'x', label="prediction")
+        ax1.legend()
+        #  ax1.set_title(f"Basin {Validation_basin} discharge>q95")
+        ax1.set_title(f"Basin {Validation_basin}, monsoon, discharge: >q90")
+        # ax1.xaxis.set_tick_params(rotation=90)
+        ax1.set_xlabel("Date")
+        ax1.grid('on')
+        _ = ax1.set_ylabel("Discharge (mm/d)")
 
-predsmonsoon = preds[np.where((date_range.month >= 6) & (date_range.month <= 10))[0]]
-obsmonsoon = obs[np.where((date_range.month >= 6) & (date_range.month <= 10))[0]]
-threshq1 = np.percentile(predsmonsoon, 90)
-threshq2 = np.percentile(predsmonsoon, 55)
-# idx = np.asarray([i for i in range(0,len(preds)) if (preds[i]>threshq1) & (preds[i]<threshq2)])
-idx = np.asarray([i for i in range(0, len(preds)) if (preds[i] > threshq1)])
-# idx = np.where((preds>threshq1) & (preds<threshq2) & (date_range.month>=6) & (date_range.month<=10))[0]
-print([threshq1, threshq2, idx.shape])
-# set model to eval mode (important for dropout)
-model.eval()
-model.cpu()
-ig = IntegratedGradients(model, multiply_by_inputs=True)
-basline = torch.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
-integ_grad = np.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
-for i in idx:
-    # print (i)
-    integ_grad += ig.attribute(ds_val.x[i:(i + 1), :, :], basline).numpy()
-integ_grad = np.squeeze(integ_grad)
-integ_grad /= len(idx)
-_ = model.cuda()
+        #  df = pd.DataFrame(spatial_image_grad, index =list(LAT_GRID), columns =list(LON_GRID))
+        df = pd.DataFrame(image_grad_small[sequence_length_small - 3, :], index=list(LAT_GRID), columns=list(LON_GRID))
+        #  vmax=np.max(np.abs(spatial_image_grad.flat))
+        vmax = np.max(np.abs(image_grad_small[sequence_length_small - 3, :].flat))
+        sns.heatmap(df[::-1], ax=ax2, square=True, cmap='RdYlBu', vmin=-vmax, vmax=vmax)
 
-image_grad = integ_grad[:, :H_LAT * W_LON].reshape((sequence_length, H_LAT, W_LON))
-time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
-spatial_image_grad = np.sum(image_grad, axis=0)
-atrrib_grade = integ_grad[:, H_LAT * W_LON:]
+        txn = np.arange(-sequence_length + 1, 0 + 1)
+        ax3.plot(txn, time_vector_grad, '-o', color='c')
+        ax3.set_xlabel("Day")
+        ax3.set_ylabel("Integrated gradients")
+        ax3.set_xlim([-sequence_length + 1, 0])
+        ax3.set_xticks(txn)
 
-# integ_file = PATH_ROOT + "Out/integ_grad_2000_2014"
-# np.save(file=integ_file, arr=integ_grad)
+    # plot
+    with plt.style.context('ggplot'):
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15))
+        ax1.plot(new_date_range, obs[idx], label="observation")
+        ax1.plot(new_date_range, preds[idx], label="prediction")
+        ax1.legend()
+        ax1.set_title(f"Basin {Validation_basin}")
+        # ax1.xaxis.set_tick_params(rotation=90)
+        ax1.set_xlabel("Date")
+        ax1.grid('on')
+        _ = ax1.set_ylabel("Discharge (mm/d)")
 
-# Plot Integrated Gradients - Spatial 
-sequence_length_small = 9
-image_grad_small = image_grad[sequence_length - sequence_length_small:, :]
-n_w_win = 3
-n_h_win = int((sequence_length_small + 1) / n_w_win)
-fig, ax = plt.subplots(n_h_win, n_w_win, figsize=(10 * n_h_win, 6 * n_w_win))
-max_v = abs(image_grad_small).max()
-min_v = -max_v
-for i in range(sequence_length_small):
-    ax.flat[i].set_title(f'Day {i - sequence_length_small}')
-    df = pd.DataFrame(image_grad_small[i, :], index=list(LAT_GRID), columns=list(LON_GRID))
-    sns.heatmap(df[::-1], ax=ax.flat[i], vmin=min_v, vmax=max_v, square=True, cmap='RdYlBu')
+        ax2.bar(['Precipitation', "Mean Precipitation", "Aridity", "Area", "Mean elevation"], sum(att),
+                color=['b', 'g', 'g', 'g', 'g'])
+        ax2.plot(['Precipitation', "Mean Precipitation", "Aridity", "Area", "Mean elevation"], [0, 0, 0, 0, 0], 'k')
+        ax2.set_ylabel("Attribute sum integrated gradients")
 
-# plot without catchment attributes
-with plt.style.context('ggplot'):
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15))
-    # ax1.plot(new_date_range, obs[idx], label="observation")
-    # ax1.plot(new_date_range, preds[idx], label="prediction")
-    # ax1.plot(idx, obs[idx], 'x', label="observation")
-    # ax1.plot(idx, preds[idx],'x', label="prediction")
-    ax1.plot(idx, obs[idx], 'x', label="observation")
-    ax1.plot(idx, preds[idx], 'x', label="prediction")
-    ax1.legend()
-    #  ax1.set_title(f"Basin {Validation_basin} discharge>q95")
-    ax1.set_title(f"Basin {Validation_basin}, monsoon, discharge: >q90")
-    # ax1.xaxis.set_tick_params(rotation=90)
-    ax1.set_xlabel("Date")
-    ax1.grid('on')
-    _ = ax1.set_ylabel("Discharge (mm/d)")
+        txn = np.arange(-sequence_length + 1, 0 + 1)
+        ax3.plot(txn, att[:, 0], '-o', color='c')
+        ax3.set_xlabel("Day")
+        ax3.set_ylabel("Integrated gradients")
+        ax3.set_xlim([-sequence_length + 1, 0])
+        ax3.set_xticks(txn)
 
-    #  df = pd.DataFrame(spatial_image_grad, index =list(LAT_GRID), columns =list(LON_GRID))
-    df = pd.DataFrame(image_grad_small[sequence_length_small - 3, :], index=list(LAT_GRID), columns=list(LON_GRID))
-    #  vmax=np.max(np.abs(spatial_image_grad.flat))
-    vmax = np.max(np.abs(image_grad_small[sequence_length_small - 3, :].flat))
-    sns.heatmap(df[::-1], ax=ax2, square=True, cmap='RdYlBu', vmin=-vmax, vmax=vmax)
-
-    txn = np.arange(-sequence_length + 1, 0 + 1)
-    ax3.plot(txn, time_vector_grad, '-o', color='c')
-    ax3.set_xlabel("Day")
-    ax3.set_ylabel("Integrated gradients")
-    ax3.set_xlim([-sequence_length + 1, 0])
-    ax3.set_xticks(txn)
-
-# plot 
-with plt.style.context('ggplot'):
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15))
-    ax1.plot(new_date_range, obs[idx], label="observation")
-    ax1.plot(new_date_range, preds[idx], label="prediction")
-    ax1.legend()
-    ax1.set_title(f"Basin {Validation_basin}")
-    # ax1.xaxis.set_tick_params(rotation=90)
-    ax1.set_xlabel("Date")
-    ax1.grid('on')
-    _ = ax1.set_ylabel("Discharge (mm/d)")
-
-    ax2.bar(['Precipitation', "Mean Precipitation", "Aridity", "Area", "Mean elevation"], sum(att),
-            color=['b', 'g', 'g', 'g', 'g'])
-    ax2.plot(['Precipitation', "Mean Precipitation", "Aridity", "Area", "Mean elevation"], [0, 0, 0, 0, 0], 'k')
-    ax2.set_ylabel("Attribute sum integrated gradients")
-
-    txn = np.arange(-sequence_length + 1, 0 + 1)
-    ax3.plot(txn, att[:, 0], '-o', color='c')
-    ax3.set_xlabel("Day")
-    ax3.set_ylabel("Integrated gradients")
-    ax3.set_xlim([-sequence_length + 1, 0])
-    ax3.set_xticks(txn)
-
-# This cell is for creating the raw data - no need to run this
-start_date_pd = pd.to_datetime(datetime.datetime(DATA_START_DATE[0], DATA_START_DATE[1], DATA_START_DATE[2], 0, 0))
-end_date_pd = pd.to_datetime(datetime.datetime(DATA_END_DATE[0], DATA_END_DATE[1], DATA_END_DATE[2], 0, 0))
-date_range = pd.date_range(start_date_pd, end_date_pd)
-num_days = len(date_range)
-num_features = 3
-h = len(LAT_GRID)
-w = len(LON_GRID)
-data = np.zeros((num_days, num_features, h, w))
-for i, lat_i in enumerate(LAT_GRID):
-    for j, lon_j in enumerate(LON_GRID):
-        x = get_geo_raw_data(lat_i, lon_j, start_date, end_date)
-        data[:, :, i, j] = x
-out_path = PATH_ROOT + 'Data/'
-data.tofile(out_path + "raw_data_fixed" + '_'.join([str(_) for _ in data.shape]))
+    # This cell is for creating the raw data - no need to run this
+    start_date_pd = pd.to_datetime(datetime.datetime(DATA_START_DATE[0], DATA_START_DATE[1], DATA_START_DATE[2], 0, 0))
+    end_date_pd = pd.to_datetime(datetime.datetime(DATA_END_DATE[0], DATA_END_DATE[1], DATA_END_DATE[2], 0, 0))
+    date_range = pd.date_range(start_date_pd, end_date_pd)
+    num_days = len(date_range)
+    num_features = 3
+    h = len(LAT_GRID)
+    w = len(LON_GRID)
+    data = np.zeros((num_days, num_features, h, w))
+    for i, lat_i in enumerate(LAT_GRID):
+        for j, lon_j in enumerate(LON_GRID):
+            x = get_geo_raw_data(lat_i, lon_j, start_date, end_date)
+            data[:, :, i, j] = x
+    out_path = PATH_ROOT + 'Data/'
+    data.tofile(out_path + "raw_data_fixed" + '_'.join([str(_) for _ in data.shape]))

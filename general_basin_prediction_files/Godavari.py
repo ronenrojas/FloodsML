@@ -144,7 +144,7 @@ class IMDGodavari(Dataset):
             self.num_features + self.num_attributes))
         print("Number of sample should be: (time_span - sequence_len + 1 -lead) x num_basins= {0}".format(
             (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)))
-        self.num_samples = (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)
+        self.num_samples = data.shape[0]
 
     def get_basin_indices_x_and_static_features(self, basin):
         indices_X = self.preprocessor.get_basin_indices_x(basin)

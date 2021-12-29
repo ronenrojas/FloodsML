@@ -1,19 +1,11 @@
 from general_basin_prediction_files.Godavari import IMDGodavari as new_G
-from cnn_lstm_v3 import IMDGodavari as old_G, INCLUDE_STATIC
+from general_basin_prediction_files.cnn_lstm_v3 import IMDGodavari as old_G
 from pathlib import Path
-from typing import Tuple
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
 import tqdm.notebook
 import tqdm
-import datetime
-import pathlib
-import pytz
 import os
-import json
-from LSTM import CNNLSTM
 from preprocess_data import Preprocessor
 
 root_dir = str(Path(os.getcwd()).parent)
@@ -28,6 +20,7 @@ PATH_MODEL = PATH_ROOT + "cnn_lstm/"
 DISPATCH_FORMAT = "CWC_discharge_{0}_clean"
 PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
 FILE_FORMAT = "data_{0}_{1}"
+INCLUDE_STATIC = True
 
 # Lat - width, Lon - height
 LAT_MIN = 17.375
@@ -134,33 +127,7 @@ def main():
                          idx=idx_features,
                          lead=lead,
                          include_static=INCLUDE_STATIC)
-    tr_loader_new = DataLoader(ds_train_new, batch_size=64, shuffle=True)
-    tr_loader_old = DataLoader(ds_train_old, batch_size=64, shuffle=True)
-    #########################
-    # Model, Optimizer, Loss#
-    #########################
-    # Here we create our model
-    # attributes == static features
-    num_attributes = catchment_dict['Tekra'].size
-    if not include_static:
-        num_attributes = 0
-    # idx_features - a True / False list over the 3 features (channels) of each "image"
-    input_size = (sum(idx_features) * DEFAULT_LON * DEFAULT_LAT + num_attributes) * sequence_length
-    input_image_size = (sum(idx_features), image_width, image_height)
-    model = CNNLSTM(lat=image_width, lon=image_height, input_size=cnn_output_size, num_layers=num_layers,
-                    hidden_size=hidden_size,
-                    dropout_rate=dropout_rate, num_channels=sum(idx_features),
-                    num_attributes=num_attributes, image_input_size=input_image_size).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    loss_func = nn.MSELoss()
-    n_epochs = 50  # Number of training epochs
-    # Creating the checkpoint folders
-    datetime_israel = datetime.datetime.now(pytz.timezone('Israel'))
-    path_train_ckpt = PATH_MODEL + datetime_israel.strftime("%Y_%m_%d-%H-%M-%S/")
-    pathlib.Path(path_train_ckpt).mkdir(parents=True, exist_ok=True)
-    for i in range(n_epochs):
-        train_epoch(device, model, optimizer, tr_loader_new, loss_func, i + 1)
-        train_epoch(device, model, optimizer, tr_loader_old, loss_func, i + 1)
+    print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
 
 
 if __name__ == "__main__":

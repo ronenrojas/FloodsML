@@ -7,9 +7,10 @@ class CNNLSTM(nn.Module):
 
     def __init__(self, lat, lon, input_size: int, hidden_size: int, num_channels: int, dropout_rate: float = 0.0,
                  num_layers: int = 1, num_attributes: int = 0, image_input_size=(int,)):
-        """Initialize model
-           :param hidden_size: Number of hidden units/LSTM cells
-          :param dropout_rate: Dropout rate of the last fully connected layer. Default 0.0
+        """
+        Initialize model
+       :param hidden_size: Number of hidden units/LSTM cells
+       :param dropout_rate: Dropout rate of the last fully connected layer. Default 0.0
         """
         super(CNNLSTM, self).__init__()
         self.lat = lat
@@ -20,15 +21,17 @@ class CNNLSTM(nn.Module):
         self.cnn = CNN(num_channels=num_channels, output_size_cnn=(input_size - num_attributes),
                        image_input_size=image_input_size)
         # create required layer
-        self.lstm = nn.LSTM(input_size=(input_size - num_attributes), hidden_size=self.hidden_size, num_layers=num_layers, bias=True,
+        self.lstm = nn.LSTM(input_size=(input_size - num_attributes), hidden_size=self.hidden_size,
+                            num_layers=num_layers, bias=True,
                             batch_first=True)
         self.dropout = nn.Dropout(p=self.dropout_rate)
         self.fc = nn.Linear(in_features=self.hidden_size, out_features=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the Network.
-          param x: Tensor of shape [batch size, seq length, num features] containing the input data for the LSTM network
-          :return: Tensor containing the network predictions
+        """
+        Forward pass through the Network.
+        param x: Tensor of shape [batch size, seq length, num features] containing the input data for the LSTM network
+        return: Tensor containing the network predictions
         """
         # x is of size:
         # 1. batch_size (some sample of all the training set)

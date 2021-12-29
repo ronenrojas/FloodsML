@@ -60,6 +60,7 @@ class IMDGodavari(Dataset):
         self.include_static = include_static
         self.sample_to_basin = {}
         self.start_end_indices_basins = {}
+        self.basin_name_to_mean_std_y = {}
         self.load_data(all_data)
 
     # The number of samples is: (the original number of samples (timestamps) - sequence length) * number of basins
@@ -71,31 +72,34 @@ class IMDGodavari(Dataset):
     def __getitem__(self, idx: int):
         x_new = None
         y_new = None
-        for key in self.start_end_indices_basins.keys():
+        for key in self.sample_to_basin.keys():
             start_ind = key[0]
             end_ind = key[1]
             indices_X, static_features, min_values, max_values = self.sample_to_basin[key]
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
                 x_new = self.x[idx: idx + self.seq_length, :, :, :] * indices_X
-                x_new[:, 0, :, :] = (x_new[:, 0, :, :] - min_values)
-                x_new[:, 0, :, :] /= max_values
+                if self.period == 'train':
+                    x_new[:, 0, :, :] = (x_new[:, 0, :, :] - min_values)
+                    x_new[:, 0, :, :] /= max_values
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
                 static_features = static_features[np.newaxis, np.newaxis, :]
                 static_features = np.repeat(static_features, x_new.shape[0], axis=0)
                 static_features = np.repeat(static_features, x_new.shape[1], axis=1)
                 np.concatenate([x_new, static_features], axis=2)
-                y_new = self.start_end_indices_basins[key][1][idx: idx + self.seq_length]
+                y_indices, y_new, mu_y, std_y = self.start_end_indices_basins[key]
+                if self.period == 'train':
+                    y_new = ((y_new - mu_y) / std_y)
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
-        x_new = torch.from_numpy(x_new).float()
-        y_new = torch.from_numpy(y_new).float()
-        end_indices = [key[1] for key in self.start_end_indices_basins.keys()]
-        start_indices = [key[0] for key in self.start_end_indices_basins.keys()]
+        end_indices = [key[1] for key in self.sample_to_basin.keys()]
+        start_indices = [key[0] for key in self.sample_to_basin.keys()]
         if x_new is None or y_new is None:
             print("Error - the requested to be retrieved is not in the range of start_ind, end_ind. "
                   "The requested index is: {}, the start indices are: {}, the end indices are: {}".format(idx,
                                                                                                           start_indices,
                                                                                                           end_indices))
+        x_new = torch.from_numpy(x_new).float()
+        y_new = torch.from_numpy(y_new).float()
         return x_new, y_new
 
     def load_data(self, all_data):
@@ -123,18 +127,17 @@ class IMDGodavari(Dataset):
             max_values = max_values_over_timestamps_in_basin.max(axis=1).max(axis=1)
 
             self.sample_to_basin[(i * (time_span - self.seq_length + 1 - self.lead),
-                                  (i + 1) * (time_span - self.seq_length + 1 - self.lead) - 1)] = \
+                                  (i + 1) * (time_span - self.seq_length + 1 - self.lead))] = \
                 (indices_X, static_features, min_values, max_values)
-            if self.period == 'train':
-                indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
-                mu_y = y.mean()
-                std_y = y.std()
-                self.start_end_indices_basins[(i * (time_span - self.seq_length + 1 - self.lead),
-                                               (i + 1) * (time_span - self.seq_length + 1 - self.lead) - 1)] = \
-                    (indices_Y, (y - mu_y / std_y))
+            indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
+            mu_y = y.mean()
+            std_y = y.std()
+            self.start_end_indices_basins[(i * (time_span - self.seq_length + 1 - self.lead),
+                                           (i + 1) * (time_span - self.seq_length + 1 - self.lead))] = \
+                (indices_Y, y, mu_y, std_y)
+            self.basin_name_to_mean_std_y[basin] = (mu_y, std_y)
             if not self.include_static:
                 self.num_attributes = 0
-
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
         print("Number of features should be: num_features + num_attributes= {0}".format(
@@ -153,9 +156,10 @@ class IMDGodavari(Dataset):
         return indices_X, x_static
 
     def local_rescale(self, feature: np.ndarray, mean_std=None) -> np.ndarray:
-        """Rescale output features with local mean/std.
-          :param mean_std:
-          :param feature: Numpy array containing the feature(s) as matrix.
+        """
+        Rescale output features with local mean/std.
+          param mean_std:
+          param feature: Numpy array containing the feature(s) as matrix.
           param variable: Either 'inputs' or 'output' showing which feature will
           be normalized
         :return: array containing the normalized feature
@@ -166,15 +170,13 @@ class IMDGodavari(Dataset):
         n_basins = len(self.basin_list)
         idx = int(len(feature) / n_basins)
         for i, basin_name in enumerate(self.basin_list):
-            if basin_name not in self.mean_y.keys():
-                raise RuntimeError(
-                    f"Unknown Basin {basin_name}, the training data was trained on {list(self.mean_y.keys())}")
             if i == 0:
                 y = feature[i * idx:(i + 1) * idx]
-                y = y * self.std_y[basin_name] + self.mean_y[basin_name]
+                y = y * self.basin_name_to_mean_std_y[basin_name][1] + self.basin_name_to_mean_std_y[basin_name][0]
             else:
                 y_temp = feature[i * idx:(i + 1) * idx]
-                y_temp = y_temp * self.std_y[basin_name] + self.mean_y[basin_name]
+                y_temp = y_temp * self.basin_name_to_mean_std_y[basin_name][1] + \
+                         self.basin_name_to_mean_std_y[basin_name][0]
                 y = np.concatenate([y, y_temp])
         return y
 

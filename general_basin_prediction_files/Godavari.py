@@ -4,6 +4,8 @@ from typing import List, Dict
 import numpy as np
 import torch
 from preprocess_data import Preprocessor
+import pandas as pd
+import datetime
 
 
 class IMDGodavari(Dataset):
@@ -86,7 +88,7 @@ class IMDGodavari(Dataset):
                 static_features = static_features[np.newaxis, np.newaxis, :]
                 static_features = np.repeat(static_features, x_new.shape[0], axis=0)
                 static_features = np.repeat(static_features, x_new.shape[1], axis=1)
-                np.concatenate([x_new, static_features], axis=2)
+                x_new = np.concatenate([x_new, static_features], axis=2)
                 y_indices, y_new, mu_y, std_y = self.start_end_indices_basins[key]
                 if self.period == 'train':
                     y_new = ((y_new - mu_y) / std_y)
@@ -110,6 +112,8 @@ class IMDGodavari(Dataset):
         # cropping the data to only the interested dates and the interested idx_features,
         # the idx_features are the "channels" (3 features - precipitation minimum temperature, maximum temperature)
         data = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
+        indices_to_include = self.get_monthly_data(data, start_date, end_date)
+        self.num_samples = len(self.basin_list) * len(indices_to_include)
         self.x = data
         # the number of samples (each sample is form specific date)
         time_span = data.shape[0]
@@ -144,7 +148,6 @@ class IMDGodavari(Dataset):
             self.num_features + self.num_attributes))
         print("Number of sample should be: (time_span - sequence_len + 1 -lead) x num_basins= {0}".format(
             (time_span - self.seq_length + 1 - self.lead) * len(self.basin_list)))
-        self.num_samples = data.shape[0]
 
     def get_basin_indices_x_and_static_features(self, basin):
         indices_X = self.preprocessor.get_basin_indices_x(basin)
@@ -180,28 +183,25 @@ class IMDGodavari(Dataset):
                 y = np.concatenate([y, y_temp])
         return y
 
-    def get_monthly_data(self, x, y, start_date, end_date):
-        if self.months is None:
-            return x, y
-        else:
-            # Rescaling the label
-            if self.period == 'train':
-                y = self.local_rescale(y)
-            # getting the months for each date
-            date_months = self.preprocessor.get_months_by_dates(start_date, end_date)
-            # Adjusting for sequence length and lead
-            date_months = date_months[(self.seq_length + self.lead - 1):]
-            n_samples_per_basin = int(len(y) / len(self.basin_list))
-            ind_date_months = [i for i in range(0, n_samples_per_basin) if date_months[i] in self.months]
-            ind_include = []
-            for j in range(len(self.basin_list)):
-                idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
-                if self.period == 'train':
-                    y[idx_temp] = self.update_basin_dict(self.basin_list[j], y[idx_temp])
-                ind_include += idx_temp
-            x = x[ind_include, :, :]
-            y = y[ind_include]
-            return x, y
+    def get_monthly_data(self, x, start_date, end_date):
+        # getting the months for each date
+        date_months = self.get_months_by_dates(start_date, end_date)
+        # Adjusting for sequence length and lead
+        date_months = date_months[(self.seq_length + self.lead - 1):]
+        n_samples_per_basin = int(len(x) / len(self.basin_list))
+        ind_date_months = [i for i in range(0, n_samples_per_basin) if date_months[i] in self.months]
+        ind_include = []
+        for j in range(len(self.basin_list)):
+            idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
+            ind_include += idx_temp
+        return ind_include
+
+    def get_months_by_dates(self, start_date, end_date):
+        start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
+        end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
+        date_range = pd.date_range(start_date_pd, end_date_pd)
+        months = [date_range[i].month for i in range(0, len(date_range))]
+        return months
 
     def get_min(self):
         return self.min_values

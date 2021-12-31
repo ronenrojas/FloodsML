@@ -239,7 +239,8 @@ def reshape_data_basins(x: np.ndarray, y: np.ndarray, seq_length: int, basin_lis
             x_new, y_new = reshape_data(x[:data_size - lead, :], y[lead:data_size], seq_length)
         else:
             idx = i * data_size
-            x_temp, y_temp = reshape_data(x[idx:idx - lead + data_size, :], y[idx + lead:idx + data_size], seq_length)
+            x_temp, y_temp = reshape_data(x[idx:idx - lead + data_size, :],
+                                          y[idx + lead:idx + data_size], seq_length)
             x_new = np.concatenate([x_new, x_temp], axis=0)
             y_new = np.concatenate([y_new, y_temp], axis=0)
     return x_new, y_new
@@ -310,7 +311,7 @@ class IMDGodavari(Dataset):
             # 2. (std - mean normalization) - subtract the mean and divide by the std
 
             # specifically, here we are getting the minimum / maximum
-            # of all of the time stamps + H_LAT + W_LON per channel - i.e. - for all of the channels
+            # of all the time stamps + H_LAT + W_LON per channel - i.e. - for all the channels
             # we are calculating the min / max over all the other dimensions.
             self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
@@ -333,10 +334,10 @@ class IMDGodavari(Dataset):
                     # Scaling the training data for each basin
                     y_temp = self._upadte_basin_dict(basin, y_temp)
                 x = np.concatenate([x, x_temp], axis=0)
-                if self.include_static == True:
+                if self.include_static:
                     x_s = np.concatenate([x_s, x_s_temp], axis=0)
                 y = np.concatenate([y, y_temp])
-        if self.include_static == True:
+        if self.include_static:
             x = np.concatenate([x, x_s], axis=1)
         else:
             self.num_attributes = 0

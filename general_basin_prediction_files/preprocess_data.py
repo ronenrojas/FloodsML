@@ -90,7 +90,7 @@ class Preprocessor:
         return catch_dict
 
     @staticmethod
-    def get_date_range_and_idx(self, start_date, end_date, date_range):
+    def get_date_range_and_idx(start_date, end_date, date_range):
         start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
         end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
         idx = np.where(np.bitwise_and(start_date_pd <= date_range, date_range <= end_date_pd))[0]

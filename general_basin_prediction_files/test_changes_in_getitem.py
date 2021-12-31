@@ -7,6 +7,7 @@ import tqdm.notebook
 import tqdm
 import os
 from preprocess_data import Preprocessor
+import unittest
 
 root_dir = str(Path(os.getcwd()).parent)
 RUN_LOCALLY = True
@@ -70,64 +71,74 @@ def train_epoch(device, model, optimizer, loader, loss_func, epoch):
         pbar.set_postfix_str(f"Loss: {loss.item():.4f}")
 
 
+class TestNewGetItemMethod(unittest.TestCase):
+    def test_getitem(self):
+        # Whether to use CPU or GPU. Use False for CPU mode.
+        use_gpu = True
+        device = torch.device("cuda:0" if (torch.cuda.is_available() and use_gpu) else "cpu")
+        #################################
+        ###### Meta parameters ##########
+        #################################
+        hidden_size = 128  # Number of LSTM cells
+        dropout_rate = 0.01  # Dropout rate of the final fully connected Layer [0.0, 1.0]
+        # learning_rate = 2e-3 # Learning rate used to update the weights
+        learning_rate = 1e-4  # Learning rate used to update the weights
+        sequence_length = 30  # Length of the meteorological record provided to the network
+        num_layers = 2  # Number of LSTM cells
+        lead = 0  # 1
+        cnn_output_size = 20
+        num_hidden_layers = 3
+        num_hidden_units = 128
+        ### Choose features ###
+        use_perc = True
+        # maximum temperature in a given day
+        use_t_max = False
+        # minimum temperature in a given day
+        use_t_min = False
+        idx_features = [use_perc, use_t_max, use_t_min]
+        basin_list = ['Tekra', 'Perur']
+        preprocessor = Preprocessor(PATH_ROOT, idx_features, DATA_START_DATE, DATA_END_DATE, LAT_MIN,
+                                    LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
+        # The data will always be in shape of - samples * channels * width * height
+        all_data, image_width, image_height = preprocessor.reshape_data_by_lat_lon_file(
+            PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
+        catchment_dict = preprocessor.create_catchment_dict(PATH_CATCHMENTS)
+        include_static = True
+        # Training data
+        start_date = (2000, 1, 1)
+        end_date = (2009, 12, 31)
+        months_lst = [6, 7, 8, 9, 10]
+        print('Train dataset\n===============================')
+        ds_train_new = new_G(all_data,
+                             catchment_dict=catchment_dict,
+                             preprocessor=preprocessor,
+                             basin_list=basin_list,
+                             seq_length=sequence_length,
+                             period="train",
+                             dates=[start_date, end_date],
+                             months=months_lst,
+                             idx=idx_features,
+                             lead=lead,
+                             include_static=include_static)
+        ds_train_old = old_G(all_data,
+                             basin_list=basin_list,
+                             seq_length=sequence_length,
+                             period="train",
+                             dates=[start_date, end_date],
+                             months=months_lst,
+                             idx=idx_features,
+                             lead=lead,
+                             include_static=INCLUDE_STATIC)
+        print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
+        for i in range(ds_train_old.num_samples):
+            t1 = ds_train_old[i]
+            t2 = ds_train_new[i]
+            print("number of sample is: {}".format(i))
+            self.assertTrue(np.testing.assert_array_almost_equal(t1[0], t2[0], decimal=1, verbose=True))
+
+
 def main():
-    # Whether to use CPU or GPU. Use False for CPU mode.
-    use_gpu = True
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and use_gpu) else "cpu")
-    #################################
-    ###### Meta parameters ##########
-    #################################
-    hidden_size = 128  # Number of LSTM cells
-    dropout_rate = 0.01  # Dropout rate of the final fully connected Layer [0.0, 1.0]
-    # learning_rate = 2e-3 # Learning rate used to update the weights
-    learning_rate = 1e-4  # Learning rate used to update the weights
-    sequence_length = 30  # Length of the meteorological record provided to the network
-    num_layers = 2  # Number of LSTM cells
-    lead = 0  # 1
-    cnn_output_size = 20
-    num_hidden_layers = 3
-    num_hidden_units = 128
-    ### Choose features ###
-    use_perc = True
-    # maximum temperature in a given day
-    use_t_max = False
-    # minimum temperature in a given day
-    use_t_min = False
-    idx_features = [use_perc, use_t_max, use_t_min]
-    basin_list = ['Tekra', 'Perur']
-    preprocessor = Preprocessor(PATH_ROOT, idx_features, DATA_START_DATE, DATA_END_DATE, LAT_MIN,
-                                LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
-    # The data will always be in shape of - samples * channels * width * height
-    all_data, image_width, image_height = preprocessor.reshape_data_by_lat_lon_file(
-        PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
-    catchment_dict = preprocessor.create_catchment_dict(PATH_CATCHMENTS)
-    include_static = True
-    # Training data
-    start_date = (2000, 1, 1)
-    end_date = (2009, 12, 31)
-    months_lst = [6, 7, 8, 9, 10]
-    print('Train dataset\n===============================')
-    ds_train_new = new_G(all_data,
-                         catchment_dict=catchment_dict,
-                         preprocessor=preprocessor,
-                         basin_list=basin_list,
-                         seq_length=sequence_length,
-                         period="train",
-                         dates=[start_date, end_date],
-                         months=months_lst,
-                         idx=idx_features,
-                         lead=lead,
-                         include_static=include_static)
-    ds_train_old = old_G(all_data,
-                         basin_list=basin_list,
-                         seq_length=sequence_length,
-                         period="train",
-                         dates=[start_date, end_date],
-                         months=months_lst,
-                         idx=idx_features,
-                         lead=lead,
-                         include_static=INCLUDE_STATIC)
-    print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
+    unittest.main()
 
 
 if __name__ == "__main__":

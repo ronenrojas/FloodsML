@@ -134,7 +134,17 @@ class TestNewGetItemMethod(unittest.TestCase):
             t1 = ds_train_old[i]
             t2 = ds_train_new[i]
             print("number of sample is: {}".format(i))
-            self.assertTrue(np.testing.assert_array_almost_equal(t1[0], t2[0], decimal=1, verbose=True))
+            abs_t1_t2 = np.abs(t1[0] - t2[0])
+            indices = np.argwhere(abs_t1_t2 > 0.001)
+            indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
+            ind, length = indices_shape_wo_dim[0]
+            for ind in range(length):
+                item = indices[:, ind]
+                print("the array are not equal in index: {},"
+                      " the value of t1 is: {}, the value of t2 is: {}".format(item,
+                                                                               t1[0][item[0], item[1]],
+                                                                               t2[0][item[0], item[1]]))
+            print("done with sample number: {}".format(i))
 
 
 def main():

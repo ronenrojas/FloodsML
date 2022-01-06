@@ -81,15 +81,18 @@ class IMDGodavari(Dataset):
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
                 x_new = self.x[idx: idx + self.seq_length, :, :, :] * indices_X
+                x_new = torch.from_numpy(x_new).float()
                 if self.period == 'train':
-                    x_new[:, 0, :, :] = (x_new[:, 0, :, :] - min_values)
-                    x_new[:, 0, :, :] /= max_values
+                    for feature_ind in range(len([x for x in self.idx_features if x])):
+                        x_new[:, feature_ind, :, :] -= min_values[feature_ind]
+                        x_new[:, feature_ind, :, :] /= (max_values[feature_ind] - min_values[feature_ind])
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
                 static_features = static_features[np.newaxis, np.newaxis, :]
                 static_features = np.repeat(static_features, x_new.shape[0], axis=0)
                 static_features = np.repeat(static_features, x_new.shape[1], axis=1)
                 x_new = np.concatenate([x_new, static_features], axis=2)
                 y_indices, y_new, mu_y, std_y = self.start_end_indices_basins[key]
+                y_new = torch.from_numpy(y_new).float()
                 if self.period == 'train':
                     y_new = ((y_new - mu_y) / std_y)
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
@@ -100,8 +103,6 @@ class IMDGodavari(Dataset):
                   "The requested index is: {}, the start indices are: {}, the end indices are: {}".format(idx,
                                                                                                           start_indices,
                                                                                                           end_indices))
-        x_new = torch.from_numpy(x_new).float()
-        y_new = torch.from_numpy(y_new).float()
         return x_new, y_new
 
     def load_data(self, all_data):

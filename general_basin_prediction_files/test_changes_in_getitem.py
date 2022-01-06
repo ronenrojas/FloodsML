@@ -136,6 +136,7 @@ class TestNewGetItemMethod(unittest.TestCase):
             print("number of sample is: {}".format(i))
             abs_t1_t2 = np.abs(t1[0] - t2[0])
             indices = np.argwhere(abs_t1_t2 > 0.001)
+            # print("The number of not equal items is: {}".format(indices.size()))
             indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
             ind, length = indices_shape_wo_dim[0]
             for ind in range(length):

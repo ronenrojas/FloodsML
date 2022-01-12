@@ -315,9 +315,9 @@ class IMDGodavari(Dataset):
             # we are calculating the min / max over all the other dimensions.
             self.min_values = data.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = data.max(axis=0).max(axis=1).max(axis=1)
-        for i in range(data.shape[1]):
-            data[:, i, :] -= self.min_values[i]
-            data[:, i, :] /= (self.max_values[i] - self.min_values[i])
+        # for i in range(data.shape[1]):
+        #     data[:, i, :] -= self.min_values[i]
+        #     data[:, i, :] /= (self.max_values[i] - self.min_values[i])
         self.num_features = data.shape[2] * data.shape[3]
 
         for i, basin in enumerate(self.basin_list):

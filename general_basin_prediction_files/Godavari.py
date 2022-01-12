@@ -77,15 +77,15 @@ class IMDGodavari(Dataset):
         for key in self.sample_to_basin.keys():
             start_ind = key[0]
             end_ind = key[1]
-            indices_X, static_features, min_values, max_values = self.sample_to_basin[key]
+            indices_X, static_features = self.sample_to_basin[key]
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
-                x_new = self.x[idx: idx + self.seq_length, :, :, :] * indices_X
-                x_new = torch.from_numpy(x_new).float()
-                if self.period == 'train':
-                    for feature_ind in range(len([x for x in self.idx_features if x])):
-                        x_new[:, feature_ind, :, :] -= min_values[feature_ind]
-                        x_new[:, feature_ind, :, :] /= (max_values[feature_ind] - min_values[feature_ind])
+                x_new = self.x[idx: idx + self.seq_length, :, :, :]
+                x_new = np.multiply(x_new, indices_X)
+                # if self.period == 'train':
+                #     for feature_ind in range(len([x for x in self.idx_features if x])):
+                #         x_new[:, feature_ind, :, :] -= self.min_values[feature_ind]
+                #         x_new[:, feature_ind, :, :] /= (self.max_values[feature_ind] - self.min_values[feature_ind])
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
                 static_features = static_features[np.newaxis, np.newaxis, :]
                 static_features = np.repeat(static_features, x_new.shape[0], axis=0)
@@ -95,6 +95,7 @@ class IMDGodavari(Dataset):
                 if self.period == 'train':
                     y_new = ((y_new - mu_y) / std_y)
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
+                break
         end_indices = [key[1] for key in self.sample_to_basin.keys()]
         start_indices = [key[0] for key in self.sample_to_basin.keys()]
         if x_new is None or y_new is None:
@@ -102,8 +103,8 @@ class IMDGodavari(Dataset):
                   "The requested index is: {}, the start indices are: {}, the end indices are: {}".format(idx,
                                                                                                           start_indices,
                                                                                                           end_indices))
-        x_new = x_new.astype('float32')
-        y_new = y_new.astype('float32')
+        x_new = torch.from_numpy(x_new.astype(np.float32))
+        y_new = torch.from_numpy(y_new.astype(np.float32))
         return x_new, y_new
 
     def load_data(self, all_data):
@@ -117,24 +118,20 @@ class IMDGodavari(Dataset):
         indices_to_include = self.get_monthly_data(data, start_date, end_date)
         self.num_samples = len(self.basin_list) * len(indices_to_include)
         self.x = data
-        # the number of samples (each sample is form specific date)
         time_span = data.shape[0]
         self.num_features = data.shape[1] * data.shape[2] * data.shape[3]
         for i, basin in enumerate(self.basin_list):
             indices_X, static_features = self.get_basin_indices_x_and_static_features(basin)
+            indices_X_time_features = np.zeros((self.seq_length, len([x for x in self.idx_features if x]),
+                                                *indices_X.shape))
+            indices_X_time_features[:, :, :, :] = indices_X
             # calculating the min / max over all the channels - i.e. -
             # over all the timestamps + H_LAT + W_LON per channel, to later normalize the data.
-            min_values_over_timestamps = data.min(axis=0)
-            min_values_over_timestamps_in_basin = min_values_over_timestamps[:, ...] * indices_X
-            min_values = min_values_over_timestamps_in_basin.min(axis=1).min(axis=1)
-
-            max_values_over_timestamps = data.max(axis=0)
-            max_values_over_timestamps_in_basin = max_values_over_timestamps[:, ...] * indices_X
-            max_values = max_values_over_timestamps_in_basin.max(axis=1).max(axis=1)
-
+            self.min_values = self.x.min(axis=0).min(axis=1).min(axis=1)
+            self.max_values = self.x.max(axis=0).max(axis=1).max(axis=1)
             self.sample_to_basin[(i * (time_span - self.seq_length + 1 - self.lead),
                                   (i + 1) * (time_span - self.seq_length + 1 - self.lead))] = \
-                (indices_X, static_features, min_values, max_values)
+                (indices_X_time_features, static_features)
             indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
             mu_y = y.mean()
             std_y = y.std()

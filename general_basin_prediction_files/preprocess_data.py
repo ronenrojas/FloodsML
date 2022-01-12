@@ -5,6 +5,7 @@ import datetime
 from pathlib import Path
 import os
 import json
+from matplotlib import pyplot as plt
 
 
 class Preprocessor:
@@ -122,7 +123,7 @@ class Preprocessor:
         """
         generating the "image" basin from a larger "image" by mask:
         the lat_grid and lon_grid are two 1-d arrays that construct a matrix of points
-        that depicting the bottom right corner of every "pixel" of the large area.
+        that depict the bottom right corner of every "pixel" of the large area.
         from this large area, we are checking if the "pixels" of the basins smaller area
         are in this large area and creating a corresponding mask.
         The mask is in the size of the large area - 1 if this pixel in also in the basin's area,
@@ -140,11 +141,12 @@ class Preprocessor:
         # initialize a matrix with all zeros
         # for every pixel that is also in the basin area, set the indices of this pixel
         # (bottom right corner of the pixel) in the large matrix to True
-        indices_X = np.zeros((width, height), dtype=bool)
+        indices_X = np.zeros((width, height))
         for index in range(len(basin_lat_lot)):
             i, j = self.get_index_by_lat_lon(basin_lat_lot[index][0], basin_lat_lot[index][1],
                                              self.lat_grid, self.lon_grid)
-            indices_X[i[0], j[0]] = True
+            indices_X[i[0], j[0]] = 1.0
+        plt.imshow(indices_X)
         return indices_X
 
     def get_basin_indices_y(self, basin_name, start_date, end_date):

@@ -6,6 +6,15 @@ import torch
 from preprocess_data import Preprocessor
 import pandas as pd
 import datetime
+from matplotlib import pyplot as plt
+
+
+def get_months_by_dates(start_date, end_date):
+    start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
+    end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
+    date_range = pd.date_range(start_date_pd, end_date_pd)
+    months = [date_range[i].month for i in range(0, len(date_range))]
+    return months
 
 
 class IMDGodavari(Dataset):
@@ -72,6 +81,7 @@ class IMDGodavari(Dataset):
 
     # each call to __getitem__ should return ONE sample, which is of size (sequence length * number of features)
     def __getitem__(self, idx: int):
+        print(idx)
         x_new = None
         y_new = None
         for key in self.sample_to_basin.keys():
@@ -80,17 +90,14 @@ class IMDGodavari(Dataset):
             indices_X, static_features = self.sample_to_basin[key]
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
-                x_new = self.x[idx: idx + self.seq_length, :, :, :]
+                x_new = copy.deepcopy(self.x[idx: idx + self.seq_length, :, :, :])
                 x_new = np.multiply(x_new, indices_X)
-                # if self.period == 'train':
-                #     for feature_ind in range(len([x for x in self.idx_features if x])):
-                #         x_new[:, feature_ind, :, :] -= self.min_values[feature_ind]
-                #         x_new[:, feature_ind, :, :] /= (self.max_values[feature_ind] - self.min_values[feature_ind])
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
-                static_features = static_features[np.newaxis, np.newaxis, :]
-                static_features = np.repeat(static_features, x_new.shape[0], axis=0)
-                static_features = np.repeat(static_features, x_new.shape[1], axis=1)
-                x_new = np.concatenate([x_new, static_features], axis=2)
+                if self.include_static:
+                    static_features = static_features[np.newaxis, np.newaxis, :]
+                    static_features = np.repeat(static_features, x_new.shape[0], axis=0)
+                    static_features = np.repeat(static_features, x_new.shape[1], axis=1)
+                    x_new = np.concatenate([x_new, static_features], axis=2)
                 y_indices, y_new, mu_y, std_y = self.start_end_indices_basins[key]
                 if self.period == 'train':
                     y_new = ((y_new - mu_y) / std_y)
@@ -99,10 +106,12 @@ class IMDGodavari(Dataset):
         end_indices = [key[1] for key in self.sample_to_basin.keys()]
         start_indices = [key[0] for key in self.sample_to_basin.keys()]
         if x_new is None or y_new is None:
-            print("Error - the requested to be retrieved is not in the range of start_ind, end_ind. "
-                  "The requested index is: {}, the start indices are: {}, the end indices are: {}".format(idx,
-                                                                                                          start_indices,
-                                                                                                          end_indices))
+            print("Error - the requested to be retrieved is not in the "
+                  "range of start_ind, end_ind. "
+                  "The requested index is: {}, the start indices are: "
+                  "{}, the end indices are: {}".format(idx,
+                                                       start_indices,
+                                                       end_indices))
         x_new = torch.from_numpy(x_new.astype(np.float32))
         y_new = torch.from_numpy(y_new.astype(np.float32))
         return x_new, y_new
@@ -113,17 +122,19 @@ class IMDGodavari(Dataset):
         idx_s = self.preprocessor.get_index_by_date(start_date)[0]
         idx_e = self.preprocessor.get_index_by_date(end_date)[0]
         # cropping the data to only the interested dates and the interested idx_features,
-        # the idx_features are the "channels" (3 features - precipitation minimum temperature, maximum temperature)
+        # the idx_features are the "channels" (3 features - minimum precipitation, temperature, maximum temperature)
         data = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
+        self.x = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
+        # np.savetxt("./check1.csv", self.x, delimiter=".")
         indices_to_include = self.get_monthly_data(data, start_date, end_date)
+        self.x = self.x[indices_to_include, :, :, :]
         self.num_samples = len(self.basin_list) * len(indices_to_include)
-        self.x = data
         time_span = data.shape[0]
         self.num_features = data.shape[1] * data.shape[2] * data.shape[3]
         for i, basin in enumerate(self.basin_list):
             indices_X, static_features = self.get_basin_indices_x_and_static_features(basin)
-            indices_X_time_features = np.zeros((self.seq_length, len([x for x in self.idx_features if x]),
-                                                *indices_X.shape))
+            indices_X_time_features = np.ones((self.seq_length, len([x for x in self.idx_features if x]),
+                                               *indices_X.shape))
             indices_X_time_features[:, :, :, :] = indices_X
             # calculating the min / max over all the channels - i.e. -
             # over all the timestamps + H_LAT + W_LON per channel, to later normalize the data.
@@ -150,7 +161,8 @@ class IMDGodavari(Dataset):
 
     def get_basin_indices_x_and_static_features(self, basin):
         indices_X = self.preprocessor.get_basin_indices_x(basin)
-        x_static = (self.catchment_dict[basin] - self.catchment_dict['mean']) / self.catchment_dict['std']
+        x_static = (self.catchment_dict[basin] - self.catchment_dict['mean']) / \
+                   self.catchment_dict['std']
         self.num_attributes = len(x_static)
         if not self.include_static:
             self.num_attributes = 0
@@ -184,23 +196,17 @@ class IMDGodavari(Dataset):
 
     def get_monthly_data(self, x, start_date, end_date):
         # getting the months for each date
-        date_months = self.get_months_by_dates(start_date, end_date)
+        date_months = get_months_by_dates(start_date, end_date)
         # Adjusting for sequence length and lead
         date_months = date_months[(self.seq_length + self.lead - 1):]
         n_samples_per_basin = int(len(x) / len(self.basin_list))
-        ind_date_months = [i for i in range(0, n_samples_per_basin) if date_months[i] in self.months]
+        ind_date_months = [i for i in range(0, n_samples_per_basin - (self.seq_length + self.lead - 1)) if
+                           date_months[i] in self.months]
         ind_include = []
         for j in range(len(self.basin_list)):
             idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
             ind_include += idx_temp
         return ind_include
-
-    def get_months_by_dates(self, start_date, end_date):
-        start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
-        end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
-        date_range = pd.date_range(start_date_pd, end_date_pd)
-        months = [date_range[i].month for i in range(0, len(date_range))]
-        return months
 
     def get_min(self):
         return self.min_values

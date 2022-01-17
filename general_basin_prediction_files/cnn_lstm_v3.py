@@ -61,8 +61,10 @@ DATA_LEN = 17532
 NUM_CHANNELS = 3
 H_LAT = len(LAT_GRID)
 W_LON = len(LON_GRID)
-DATA_START_DATE = (1967, 1, 1)
-DATA_END_DATE = (2014, 12, 31)
+# DATA_START_DATE = (1967, 1, 1)
+# DATA_END_DATE = (2014, 12, 31)
+DATA_START_DATE = (2000, 1, 1)
+DATA_END_DATE = (2009, 12, 31)
 
 data_raw = np.fromfile(PATH_DATA_FILE)
 all_data = np.fromfile(PATH_DATA_FILE).reshape((DATA_LEN, NUM_CHANNELS, H_LAT, W_LON))
@@ -188,11 +190,9 @@ def create_basin_mask(basin, lat_grid, lon_grid):
 
 
 def get_basin_discharge(basin_name, start_date, end_date):
-    # Getting Discharge (how much water are running through specific point / river in a given amount of time -
+    # Getting Discharge (how much water are running through specific point /
+    # river in a given amount of time -
     # usually cubic metre per second)
-    # ספיקה של נהר היא כמות המים הזורמת בנהר בזמן נתון (זהו מקרה פרטי של המונח הכללי
-    # ספיקה). מקובל למדוד את הספיקה במטר מעוקב לשנייה. נהר האמזונאס, שספיקתו היא הגדולה בעולם, מזרים כ-220 אלף קוב
-    # מים לשנייה בזמן שהוא גואה, ואילו הירדן, שהוא נהר קטן, מזרים לכנרת רק כ-16 קוב מים לשנייה.
     data_discharge = pd.read_csv(PATH_LABEL + DISCH_FORMAT.format(basin_name), header=None, delim_whitespace=True)
     idx_start, idx_end = get_index(data_discharge, start_date), get_index(data_discharge, end_date)
     y = np.array(data_discharge[3][idx_start:idx_end + 1])
@@ -233,7 +233,6 @@ def reshape_data_basins(x: np.ndarray, y: np.ndarray, seq_length: int, basin_lis
     """
     n_basins = len(basin_list)
     data_size = int(x.shape[0] / n_basins)
-
     for i in range(n_basins):
         if i == 0:
             x_new, y_new = reshape_data(x[:data_size - lead, :], y[lead:data_size], seq_length)
@@ -300,6 +299,7 @@ class IMDGodavari(Dataset):
         # the features are the channels (3 features - precipitation,
         # minimum temperature, maximum temperature)
         data = copy.deepcopy(all_data[idx_s:idx_e + 1, idx_features, :, :])
+        # np.savetxt("./check2.csv", data, delimiter=",")
         time_span = data.shape[0]
         if self.period == 'train':
             # axis = 0 - getting the minimum / maximum of first dimension
@@ -344,7 +344,7 @@ class IMDGodavari(Dataset):
         # normalize data, reshape for LSTM training and remove invalid samples
         print(['1: ', x.shape, y.shape], 'Original size')
         x, y = reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
-        print(['2: ', x.shape, y.shape], 'After reshape and trimming sequenece and lead')
+        print(['2: ', x.shape, y.shape], 'After reshape and trimming sequence and lead')
         x, y = self.get_monthly_data(x, y, start_date, end_date)
         print(['3: ', x.shape, y.shape], 'Monthly pick')
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
@@ -368,8 +368,7 @@ class IMDGodavari(Dataset):
         # for Efart! duplicating the static features to each of the input images
         x_static = np.repeat([x_static_vec], x.shape[0], axis=0)
         _, self.num_attributes = x_static.shape
-
-        if self.include_static == False:
+        if not self.include_static:
             self.num_attributes = 0
             x_static = None
         num_features = x.shape[2] * x.shape[3]
@@ -424,7 +423,8 @@ class IMDGodavari(Dataset):
             # Adjusting for sequence length and lead
             date_months = date_months[(self.seq_length + self.lead - 1):]
             n_samples_per_basin = int(len(y) / len(self.basin_list))
-            ind_date_months = [i for i in range(0, n_samples_per_basin) if date_months[i] in self.months]
+            ind_date_months = [i for i in range(0, n_samples_per_basin - (self.seq_length + self.lead - 1)) if
+                               date_months[i] in self.months]
             ind_include = []
             for j in range(len(self.basin_list)):
                 idx_temp = [idx + j * n_samples_per_basin for idx in ind_date_months]
@@ -1020,3 +1020,6 @@ def main():
             data[:, :, i, j] = x
     out_path = PATH_ROOT + 'Data/'
     data.tofile(out_path + "raw_data_fixed" + '_'.join([str(_) for _ in data.shape]))
+
+if __name__ == "__main__":
+    main()

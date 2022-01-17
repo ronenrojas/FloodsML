@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 from general_basin_prediction_files.Godavari import IMDGodavari as new_G
 from general_basin_prediction_files.cnn_lstm_v3 import IMDGodavari as old_G
 from pathlib import Path
@@ -21,7 +23,7 @@ PATH_MODEL = PATH_ROOT + "cnn_lstm/"
 DISPATCH_FORMAT = "CWC_discharge_{0}_clean"
 PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
 FILE_FORMAT = "data_{0}_{1}"
-INCLUDE_STATIC = True
+INCLUDE_STATIC = False
 
 # Lat - width, Lon - height
 LAT_MIN = 17.375
@@ -76,34 +78,23 @@ class TestNewGetItemMethod(unittest.TestCase):
         # Whether to use CPU or GPU. Use False for CPU mode.
         use_gpu = True
         device = torch.device("cuda:0" if (torch.cuda.is_available() and use_gpu) else "cpu")
-        #################################
-        ###### Meta parameters ##########
-        #################################
-        hidden_size = 128  # Number of LSTM cells
-        dropout_rate = 0.01  # Dropout rate of the final fully connected Layer [0.0, 1.0]
-        # learning_rate = 2e-3 # Learning rate used to update the weights
-        learning_rate = 1e-4  # Learning rate used to update the weights
         sequence_length = 30  # Length of the meteorological record provided to the network
-        num_layers = 2  # Number of LSTM cells
         lead = 0  # 1
-        cnn_output_size = 20
-        num_hidden_layers = 3
-        num_hidden_units = 128
-        ### Choose features ###
+        # Choose features
         use_perc = True
         # maximum temperature in a given day
         use_t_max = False
         # minimum temperature in a given day
         use_t_min = False
         idx_features = [use_perc, use_t_max, use_t_min]
-        basin_list = ['Tekra', 'Perur']
+        basin_list = ['Polavaram']
         preprocessor = Preprocessor(PATH_ROOT, idx_features, DATA_START_DATE, DATA_END_DATE, LAT_MIN,
                                     LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
         # The data will always be in shape of - samples * channels * width * height
-        all_data, image_width, image_height = preprocessor.reshape_data_by_lat_lon_file(
-            PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
+        all_data, image_width, image_height = \
+            preprocessor.reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
         catchment_dict = preprocessor.create_catchment_dict(PATH_CATCHMENTS)
-        include_static = True
+        include_static = False
         # Training data
         start_date = (2000, 1, 1)
         end_date = (2009, 12, 31)
@@ -130,20 +121,24 @@ class TestNewGetItemMethod(unittest.TestCase):
                              lead=lead,
                              include_static=INCLUDE_STATIC)
         print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
-        for i in range(ds_train_old.num_samples):
-            t1 = ds_train_old[i]
-            t2 = ds_train_new[i]
+        for i in range(ds_train_old.seq_length):
+            t1, _ = ds_train_old[i]
+            t2, _ = ds_train_new[i]
             print("number of sample is: {}".format(i))
-            abs_t1_t2 = np.abs(t1[0] - t2[0])
-            indices = np.argwhere(abs_t1_t2 > 0.001)
+            abs_t1_t2 = np.abs(t1[i, :-4] - t2[i, :-4])
+            # plt.imshow(t1[i, :-4].reshape(22, 38))
+            # plt.show()
+            # plt.imshow(t2[i, :-4].reshape(22, 38))
+            # plt.show()
+            indices = np.argwhere(abs_t1_t2 > 0.00000001)
             print("The number of not equal items is: {}".format(indices.size()))
-            print("The biggest difference is: {}".format(abs_t1_t2.max()))
+            print("The biggest difference is: {}".format(abs_t1_t2.argmax()))
             print("The sum of differences is: {}".format(abs_t1_t2.sum()))
-            indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
-            ind, length = indices_shape_wo_dim[0]
-            for ind in range(length):
-                item = indices[:, ind]
-                print(item, t1[0][item[0], item[1]], t2[0][item[0], item[1]])
+            # indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
+            # ind, length = indices_shape_wo_dim[0]
+            # for ind in range(length):
+            #     item = indices[:, ind]
+            #     print(item, t1[0][item[0], item[1]], t2[0][item[0], item[1]])
             print("done with sample number: {}".format(i))
 
 

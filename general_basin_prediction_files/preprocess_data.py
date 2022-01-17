@@ -136,17 +136,16 @@ class Preprocessor:
         # surrounding the basin
         # lon_grid is an 1-d array that describing the vertical lines of the rectangle
         # surrounding the basin
-        width = len(self.lat_grid)
-        height = len(self.lon_grid)
+        height = len(self.lat_grid)
+        width = len(self.lon_grid)
         # initialize a matrix with all zeros
         # for every pixel that is also in the basin area, set the indices of this pixel
         # (bottom right corner of the pixel) in the large matrix to True
-        indices_X = np.zeros((width, height))
+        indices_X = np.zeros((height, width))
         for index in range(len(basin_lat_lot)):
             i, j = self.get_index_by_lat_lon(basin_lat_lot[index][0], basin_lat_lot[index][1],
                                              self.lat_grid, self.lon_grid)
             indices_X[i[0], j[0]] = 1.0
-        plt.imshow(indices_X)
         return indices_X
 
     def get_basin_indices_y(self, basin_name, start_date, end_date):

@@ -108,7 +108,7 @@ class Dream:
         unit_hodograph = self.output_dict["UH"]
         runoff = self.output_dict["runoff"]
         runoff_before = self.output_dict['runoff_before']
-        fig, axs = plt.subplots(3)
+        fig, axs = plt.subplots(2, sharex=True)
         fig.suptitle('Dreams')
         axs[0].plot(precip, 'b')
         plt.ylabel('Precipitation')
@@ -116,9 +116,6 @@ class Dream:
         axs[1].plot(runoff_before, 'k')
         plt.legend(["Precipitation", "runoff", "runoff before"])
         plt.ylabel('Precipitation / runoff (mm/day)')
-        plt.xlabel('Day')
-        axs[2].plot(unit_hodograph)
-        plt.ylabel('UH')
         plt.xlabel('Day')
         plt.show()
 

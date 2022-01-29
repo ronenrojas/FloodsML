@@ -120,7 +120,7 @@ class TestNewGetItemMethod(unittest.TestCase):
                              lead=lead,
                              include_static=INCLUDE_STATIC)
         print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
-        for i in range(ds_train_old.num_samples):
+        for i in range(len(ds_train_old)):
             t1, _ = ds_train_old[i]
             t2, _ = ds_train_new[i]
             # plt.imshow(t1.sum(axis=0)[:-4].reshape(22, 38))
@@ -128,17 +128,18 @@ class TestNewGetItemMethod(unittest.TestCase):
             # plt.imshow(t2.sum(axis=0)[:-4].reshape(22, 38))
             # plt.show()
             print("number of sample is: {}".format(i))
-            abs_t1_t2 = np.abs(t1[i, :] - t2[i, :])
-            indices = np.argwhere(abs_t1_t2 > 0.00000001)
-            print("The number of not equal items is: {}".format(indices.size()))
-            print("The biggest difference is: {}".format(abs_t1_t2.argmax()))
-            print("The sum of differences is: {}".format(abs_t1_t2.sum()))
-            # indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
-            # ind, length = indices_shape_wo_dim[0]
-            # for ind in range(length):
-            #     item = indices[:, ind]
-            #     print(item, t1[0][item[0], item[1]], t2[0][item[0], item[1]])
-            print("done with sample number: {}".format(i))
+            for j in range(ds_train_old.seq_length):
+                abs_t1_t2 = np.abs(t1[j, :] - t2[j, :])
+                indices = np.argwhere(abs_t1_t2 > 0.00000001)
+                print("The number of not equal items is: {}".format(indices.size()))
+                print("The biggest difference is: {}".format(abs_t1_t2.argmax()))
+                print("The sum of differences is: {}".format(abs_t1_t2.sum()))
+                # indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
+                # ind, length = indices_shape_wo_dim[0]
+                # for ind in range(length):
+                #     item = indices[:, ind]
+                #     print(item, t1[0][item[0], item[1]], t2[0][item[0], item[1]])
+                print("done with sample number: {}".format(j))
 
 
 def main():

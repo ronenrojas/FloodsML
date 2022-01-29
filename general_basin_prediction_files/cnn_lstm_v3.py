@@ -61,8 +61,6 @@ DATA_LEN = 17532
 NUM_CHANNELS = 3
 H_LAT = len(LAT_GRID)
 W_LON = len(LON_GRID)
-# DATA_START_DATE = (1967, 1, 1)
-# DATA_END_DATE = (2014, 12, 31)
 DATA_START_DATE = (2000, 1, 1)
 DATA_END_DATE = (2009, 12, 31)
 
@@ -101,7 +99,7 @@ use_t_min = False
 idx_features = [use_perc, use_t_max, use_t_min]
 # Choose basin #
 # basin_list = ['Mancherial', 'Perur' ,'Pathagudem','Polavaram', 'Tekra']
-basin_list = ['Tekra', 'Perur']
+basin_list = ['Polavaram']
 ###############
 # Data set up #
 ###############
@@ -119,7 +117,8 @@ def create_catchment_dict(sheet_path):
     return catch_dict
 
 
-CATCHMENT_DICT = create_catchment_dict(PATH_CATCHMENTS)
+CATCHMENT_DICT = \
+    create_catchment_dict(PATH_CATCHMENTS)
 
 
 def get_index(data, date_input):
@@ -319,7 +318,6 @@ class IMDGodavari(Dataset):
         #     data[:, i, :] -= self.min_values[i]
         #     data[:, i, :] /= (self.max_values[i] - self.min_values[i])
         self.num_features = data.shape[2] * data.shape[3]
-
         for i, basin in enumerate(self.basin_list):
             if i == 0:
                 x, x_s = self._get_basin_data(basin, data, start_date, end_date)

@@ -23,7 +23,7 @@ PATH_MODEL = PATH_ROOT + "cnn_lstm/"
 DISPATCH_FORMAT = "CWC_discharge_{0}_clean"
 PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
 FILE_FORMAT = "data_{0}_{1}"
-INCLUDE_STATIC = False
+INCLUDE_STATIC = True
 
 # Lat - width, Lon - height
 LAT_MIN = 17.375
@@ -37,13 +37,12 @@ DATA_LEN = 17532
 NUM_CHANNELS = 3
 DEFAULT_LAT = len(LAT_GRID)
 DEFAULT_LON = len(LON_GRID)
-DATA_START_DATE = (1967, 1, 1)
-DATA_END_DATE = (2014, 12, 31)
 
 
 def train_epoch(device, model, optimizer, loader, loss_func, epoch):
     """Train model for a single epoch.
 
+    :param device:
     :param model: A torch.nn.Module implementing the LSTM model
     :param optimizer: One of PyTorchs optimizer classes.
     :param loader: A PyTorch DataLoader, providing the trainings
@@ -88,16 +87,16 @@ class TestNewGetItemMethod(unittest.TestCase):
         use_t_min = False
         idx_features = [use_perc, use_t_max, use_t_min]
         basin_list = ['Polavaram']
-        preprocessor = Preprocessor(PATH_ROOT, idx_features, DATA_START_DATE, DATA_END_DATE, LAT_MIN,
+        start_date = (2000, 1, 1)
+        end_date = (2009, 12, 31)
+        preprocessor = Preprocessor(PATH_ROOT, idx_features, start_date, end_date, LAT_MIN,
                                     LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
         # The data will always be in shape of - samples * channels * width * height
         all_data, image_width, image_height = \
             preprocessor.reshape_data_by_lat_lon_file(PATH_DATA_FILE, DIMS_JSON_FILE_PATH)
         catchment_dict = preprocessor.create_catchment_dict(PATH_CATCHMENTS)
-        include_static = False
+        include_static = True
         # Training data
-        start_date = (2000, 1, 1)
-        end_date = (2009, 12, 31)
         months_lst = [6, 7, 8, 9, 10]
         print('Train dataset\n===============================')
         ds_train_new = new_G(all_data,
@@ -121,15 +120,15 @@ class TestNewGetItemMethod(unittest.TestCase):
                              lead=lead,
                              include_static=INCLUDE_STATIC)
         print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
-        for i in range(ds_train_old.seq_length):
+        for i in range(ds_train_old.num_samples):
             t1, _ = ds_train_old[i]
             t2, _ = ds_train_new[i]
+            plt.imshow(t1.sum(axis=0)[:-4].reshape(22, 38))
+            plt.show()
+            plt.imshow(t2.sum(axis=0)[:-4].reshape(22, 38))
+            plt.show()
             print("number of sample is: {}".format(i))
             abs_t1_t2 = np.abs(t1[i, :-4] - t2[i, :-4])
-            # plt.imshow(t1[i, :-4].reshape(22, 38))
-            # plt.show()
-            # plt.imshow(t2[i, :-4].reshape(22, 38))
-            # plt.show()
             indices = np.argwhere(abs_t1_t2 > 0.00000001)
             print("The number of not equal items is: {}".format(indices.size()))
             print("The biggest difference is: {}".format(abs_t1_t2.argmax()))

@@ -6,15 +6,6 @@ import torch
 from preprocess_data import Preprocessor
 import pandas as pd
 import datetime
-from matplotlib import pyplot as plt
-
-
-def get_months_by_dates(start_date, end_date):
-    start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
-    end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
-    date_range = pd.date_range(start_date_pd, end_date_pd)
-    months = [date_range[i].month for i in range(0, len(date_range))]
-    return months
 
 
 class IMDGodavari(Dataset):
@@ -123,9 +114,8 @@ class IMDGodavari(Dataset):
         idx_e = self.preprocessor.get_index_by_date(end_date)[0]
         # cropping the data to only the interested dates and the interested idx_features,
         # the idx_features are the "channels" (3 features - minimum precipitation, temperature, maximum temperature)
-        data = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
+        data = all_data[idx_s:idx_e + 1, self.idx_features, :, :]
         self.x = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
-        # np.savetxt("./check1.csv", self.x, delimiter=".")
         indices_to_include = self.get_monthly_data(data, start_date, end_date)
         self.x = self.x[indices_to_include, :, :, :]
         self.num_samples = len(self.basin_list) * len(indices_to_include)
@@ -137,7 +127,7 @@ class IMDGodavari(Dataset):
                                                *indices_X.shape))
             indices_X_time_features[:, :, :, :] = indices_X
             # calculating the min / max over all the channels - i.e. -
-            # over all the timestamps + H_LAT + W_LON per channel, to later normalize the data.
+            # over all the samples (timestamps) + H_LAT + W_LON per channel
             self.min_values = self.x.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = self.x.max(axis=0).max(axis=1).max(axis=1)
             self.sample_to_basin[(i * (time_span - self.seq_length + 1 - self.lead),
@@ -194,9 +184,17 @@ class IMDGodavari(Dataset):
                 y = np.concatenate([y, y_temp])
         return y
 
+    @staticmethod
+    def get_months_by_dates(start_date, end_date):
+        start_date_pd = pd.to_datetime(datetime.datetime(start_date[0], start_date[1], start_date[2], 0, 0))
+        end_date_pd = pd.to_datetime(datetime.datetime(end_date[0], end_date[1], end_date[2], 0, 0))
+        date_range = pd.date_range(start_date_pd, end_date_pd)
+        months = [date_range[i].month for i in range(0, len(date_range))]
+        return months
+
     def get_monthly_data(self, x, start_date, end_date):
         # getting the months for each date
-        date_months = get_months_by_dates(start_date, end_date)
+        date_months = self.get_months_by_dates(start_date, end_date)
         # Adjusting for sequence length and lead
         date_months = date_months[(self.seq_length + self.lead - 1):]
         n_samples_per_basin = int(len(x) / len(self.basin_list))

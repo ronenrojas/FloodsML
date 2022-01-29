@@ -86,7 +86,7 @@ class TestNewGetItemMethod(unittest.TestCase):
         # minimum temperature in a given day
         use_t_min = False
         idx_features = [use_perc, use_t_max, use_t_min]
-        basin_list = ['Polavaram']
+        basin_list = ['Tekra', "Perur"]
         start_date = (2000, 1, 1)
         end_date = (2009, 12, 31)
         preprocessor = Preprocessor(PATH_ROOT, idx_features, start_date, end_date, LAT_MIN,
@@ -121,8 +121,8 @@ class TestNewGetItemMethod(unittest.TestCase):
                              include_static=INCLUDE_STATIC)
         print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
         for i in range(len(ds_train_old)):
-            t1, _ = ds_train_old[i]
-            t2, _ = ds_train_new[i]
+            t1, y1 = ds_train_old[i]
+            t2, y2 = ds_train_new[i]
             # plt.imshow(t1.sum(axis=0)[:-4].reshape(22, 38))
             # plt.show()
             # plt.imshow(t2.sum(axis=0)[:-4].reshape(22, 38))
@@ -131,15 +131,16 @@ class TestNewGetItemMethod(unittest.TestCase):
             for j in range(ds_train_old.seq_length):
                 abs_t1_t2 = np.abs(t1[j, :] - t2[j, :])
                 indices = np.argwhere(abs_t1_t2 > 0.00000001)
+                if indices.numel() > 0:
+                    print("in sample number: {}, in {} in the sequence there is difference".format(i, j))
+                abs_y1_y2 = np.abs(y1 - y2)
+                y = np.argwhere(abs_y1_y2 > 0.00000001)
+                if y.numel() > 0:
+                    print("in sample number: {}, in {} in the sequence there is difference".format(i, j))
                 print("The number of not equal items is: {}".format(indices.size()))
-                print("The biggest difference is: {}".format(abs_t1_t2.argmax()))
+                print("The biggest difference is: {}".format(torch.max(abs_t1_t2)))
                 print("The sum of differences is: {}".format(abs_t1_t2.sum()))
-                # indices_shape_wo_dim = [(i, x) for (i, x) in enumerate(indices.shape) if x != 2]
-                # ind, length = indices_shape_wo_dim[0]
-                # for ind in range(length):
-                #     item = indices[:, ind]
-                #     print(item, t1[0][item[0], item[1]], t2[0][item[0], item[1]])
-                print("done with sample number: {}".format(j))
+                print("done with sample number: {}".format(i))
 
 
 def main():

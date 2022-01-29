@@ -278,8 +278,8 @@ def main():
     tr_loader = DataLoader(ds_train, batch_size=64, shuffle=True)
 
     # Test data. We use the feature min/max of the training period for normalization
-    start_date = (2000, 1, 1)
-    end_date = (2009, 12, 31)
+    start_date = (2010, 1, 1)
+    end_date = (2014, 12, 31)
     print('\nTest dataset\n===============================')
     ds_test = IMDGodavari(all_data,
                           basin_list,
@@ -340,8 +340,8 @@ def main():
 
     # start_date = (2000, 1, 1)
     # end_date = (2014, 12, 31)
-    start_date = (2010, 1, 1)
-    end_date = (2014, 12, 31)
+    start_date = (2000, 1, 1)
+    end_date = (2009, 12, 31)
     months_lst = [6, 7, 8, 9, 10]
 
     Validation_basin = ["Tekra"]

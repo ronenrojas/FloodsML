@@ -5,7 +5,6 @@ import datetime
 from pathlib import Path
 import os
 import json
-from matplotlib import pyplot as plt
 
 
 class Preprocessor:
@@ -150,8 +149,7 @@ class Preprocessor:
 
     def get_basin_indices_y(self, basin_name, start_date, end_date):
         # Getting Discharge (how much water are running through
-        # specific point / river in a given amount of time -
-        # usually cubic metre per second)
+        # specific point / river in a given amount of time - usually cubic metre per second)
         data_discharge = pd.read_csv(self.dispatch_format.format(basin_name),
                                      header=None, delim_whitespace=True)
         idx_start, idx_end = Preprocessor.get_index(data_discharge, start_date), \

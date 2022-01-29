@@ -60,8 +60,8 @@ class IMDGodavari(Dataset):
         self.mask_list = mask_list
         self.num_features = None
         self.include_static = include_static
-        self.sample_to_basin = {}
-        self.start_end_indices_basins = {}
+        self.sample_to_basin_x = {}
+        self.sample_to_basin_y = {}
         self.basin_name_to_mean_std_y = {}
         self.load_data(all_data)
 
@@ -70,14 +70,19 @@ class IMDGodavari(Dataset):
     def __len__(self):
         return self.num_samples - 2 * (self.seq_length + 1 - self.lead)
 
-    # each call to __getitem__ should return ONE sample, which is of size (sequence length * number of features)
+    # each call to __getitem__ should return ONE sample, which is of size
+    # (sequence length * number of features (channels * width * height))
     def __getitem__(self, idx: int):
         x_new = None
         y_new = None
-        for key in self.sample_to_basin.keys():
+        for key in self.sample_to_basin_x.keys():
             start_ind = key[0]
             end_ind = key[1]
-            indices_X, static_features, _ = self.sample_to_basin[key]
+            indices_X, static_features, _ = self.sample_to_basin_x[key]
+            mu_y, std_y = self.sample_to_basin_y[key]
+            y_new = copy.deepcopy(self.y[idx + self.seq_length - 1])
+            if self.period == 'train':
+                y_new = ((y_new - mu_y) / std_y)
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
                 x_new = copy.deepcopy(self.x[idx: idx + self.seq_length, :, :, :])
@@ -91,12 +96,9 @@ class IMDGodavari(Dataset):
                     static_features = static_features[np.newaxis, :]
                     static_features = np.repeat(static_features, x_new.shape[0], axis=0)
                     x_new = np.concatenate([x_new, static_features], axis=1)
-                y_indices, y_new, mu_y, std_y = self.start_end_indices_basins[key]
-                if self.period == 'train':
-                    y_new = ((y_new - mu_y) / std_y)
                 break
-        end_indices = [key[1] for key in self.sample_to_basin.keys()]
-        start_indices = [key[0] for key in self.sample_to_basin.keys()]
+        end_indices = [key[1] for key in self.sample_to_basin_x.keys()]
+        start_indices = [key[0] for key in self.sample_to_basin_x.keys()]
         if x_new is None or y_new is None:
             print("Error - the requested to be retrieved is not in the "
                   "range of start_ind, end_ind. "
@@ -105,7 +107,7 @@ class IMDGodavari(Dataset):
                                                        start_indices,
                                                        end_indices))
         x_new = torch.from_numpy(x_new.astype(np.float32))
-        y_new = torch.from_numpy(y_new.astype(np.float32))
+        y_new = torch.tensor(y_new.astype(np.float32))
         return x_new, y_new
 
     def load_data(self, all_data):
@@ -130,19 +132,24 @@ class IMDGodavari(Dataset):
             # over all the samples (timestamps) + H_LAT + W_LON per channel
             self.min_values = self.x.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = self.x.max(axis=0).max(axis=1).max(axis=1)
-            self.sample_to_basin[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
-                            (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
+            self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1),
+                                    (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
                 (indices_X_time_features, static_features, indices_to_include_months)
             indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
+            if i == 0:
+                self.y = y
+            else:
+                self.y = np.concatenate([self.y, y], axis=0)
             mu_y = y.mean()
             std_y = y.std()
-            self.start_end_indices_basins[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
-                                (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
-                (indices_Y, y, mu_y, std_y)
+            self.sample_to_basin_y[(i * (len(indices_to_include_months) - self.seq_length + 1),
+                                    (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
+                (mu_y, std_y)
             self.basin_name_to_mean_std_y[basin] = (mu_y, std_y)
             if not self.include_static:
                 self.num_attributes = 0
         self.x = self.x[indices_to_include_months, :, :, :]
+        self.y = self.y[indices_to_include_months]
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
         print("Number of features should be: num_features + num_attributes= {0}".format(

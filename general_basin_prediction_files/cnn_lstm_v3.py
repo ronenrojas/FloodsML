@@ -99,7 +99,7 @@ use_t_min = False
 idx_features = [use_perc, use_t_max, use_t_min]
 # Choose basin #
 # basin_list = ['Mancherial', 'Perur' ,'Pathagudem','Polavaram', 'Tekra']
-basin_list = ['Polavaram']
+basin_list = ['Tekra', 'Perur']
 ###############
 # Data set up #
 ###############
@@ -407,7 +407,8 @@ class IMDGodavari(Dataset):
         std_y = y.std()
         self.mean_y[basin_name] = mu_y
         self.std_y[basin_name] = std_y
-        return (y - mu_y) / std_y
+        y = (y - mu_y) / std_y
+        return y
 
     def get_monthly_data(self, x, y, start_date, end_date):
         if self.months is None:

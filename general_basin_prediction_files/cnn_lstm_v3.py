@@ -415,8 +415,8 @@ class IMDGodavari(Dataset):
             return x, y
         else:
             # Rescaling the label
-            if self.period == 'train':
-                y = self.local_rescale(y, 'output')
+            # if self.period == 'train':
+            #     y = self.local_rescale(y, 'output')
             # getting the months for each date
             date_months = get_months_by_dates(start_date, end_date)
             # Adjusting for sequence length and lead
@@ -789,7 +789,7 @@ def main():
     for i in range(n_epochs):
         train_epoch(model, optimizer, tr_loader, loss_func, i + 1)
         obs, preds = eval_model(model, test_loader)
-        preds = ds_test.local_rescale(preds.cpu().numpy(), variable='output')
+        # preds = ds_test.local_rescale(preds.cpu().numpy(), variable='output')
         nse = calc_nse(obs.numpy(), preds)
         tqdm.tqdm.write(f"Test NSE: {nse:.3f}")
         model_name = "epoch_{:d}_nse_{:.3f}.ckpt".format(i + 1, nse)
@@ -838,7 +838,7 @@ def main():
     #   # 'drive/MyDrive/Efrat/model_lstm/2021_07_24-21-23-40/epoch_6_nse_0.825.ckpt'
     #   model = torch.load(path_to_ckpt)
     obs, preds = eval_model(model, val_loader)
-    preds = ds_val.local_rescale(preds.cpu().numpy(), variable='output')
+    # preds = ds_val.local_rescale(preds.cpu().numpy(), variable='output')
     obs = obs.numpy()
     nse = calc_nse(obs, preds)
     pb95, pb5, total_b = calc_bias(obs, preds)

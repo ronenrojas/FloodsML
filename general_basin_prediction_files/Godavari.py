@@ -68,31 +68,32 @@ class IMDGodavari(Dataset):
     # The number of samples is: (the original number of samples (timestamps) - sequence length) * number of basins
     # each samples is of size: (sequence length * number of features ((width * height * channels) + static features))
     def __len__(self):
-        return self.num_samples
+        return self.num_samples - 2 * (self.seq_length + 1 - self.lead)
 
     # each call to __getitem__ should return ONE sample, which is of size (sequence length * number of features)
     def __getitem__(self, idx: int):
-        print(idx)
         x_new = None
         y_new = None
         for key in self.sample_to_basin.keys():
             start_ind = key[0]
             end_ind = key[1]
-            indices_X, static_features = self.sample_to_basin[key]
+            indices_X, static_features, _ = self.sample_to_basin[key]
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
                 x_new = copy.deepcopy(self.x[idx: idx + self.seq_length, :, :, :])
                 x_new = np.multiply(x_new, indices_X)
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
+                for i in range(x_new.shape[1]):
+                    x_new[:, i, :] -= self.min_values[i]
+                    x_new[:, i, :] /= (self.max_values[i] - self.min_values[i])
+                x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
                 if self.include_static:
-                    static_features = static_features[np.newaxis, np.newaxis, :]
+                    static_features = static_features[np.newaxis, :]
                     static_features = np.repeat(static_features, x_new.shape[0], axis=0)
-                    static_features = np.repeat(static_features, x_new.shape[1], axis=1)
-                    x_new = np.concatenate([x_new, static_features], axis=2)
+                    x_new = np.concatenate([x_new, static_features], axis=1)
                 y_indices, y_new, mu_y, std_y = self.start_end_indices_basins[key]
                 if self.period == 'train':
                     y_new = ((y_new - mu_y) / std_y)
-                x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
                 break
         end_indices = [key[1] for key in self.sample_to_basin.keys()]
         start_indices = [key[0] for key in self.sample_to_basin.keys()]
@@ -116,9 +117,8 @@ class IMDGodavari(Dataset):
         # the idx_features are the "channels" (3 features - minimum precipitation, temperature, maximum temperature)
         data = all_data[idx_s:idx_e + 1, self.idx_features, :, :]
         self.x = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
-        indices_to_include = self.get_monthly_data(data, start_date, end_date)
-        self.x = self.x[indices_to_include, :, :, :]
-        self.num_samples = len(self.basin_list) * len(indices_to_include)
+        indices_to_include_months = self.get_monthly_data(data, start_date, end_date)
+        self.num_samples = len(self.basin_list) * len(indices_to_include_months)
         time_span = data.shape[0]
         self.num_features = data.shape[1] * data.shape[2] * data.shape[3]
         for i, basin in enumerate(self.basin_list):
@@ -130,18 +130,19 @@ class IMDGodavari(Dataset):
             # over all the samples (timestamps) + H_LAT + W_LON per channel
             self.min_values = self.x.min(axis=0).min(axis=1).min(axis=1)
             self.max_values = self.x.max(axis=0).max(axis=1).max(axis=1)
-            self.sample_to_basin[(i * (time_span - self.seq_length + 1 - self.lead),
-                                  (i + 1) * (time_span - self.seq_length + 1 - self.lead))] = \
-                (indices_X_time_features, static_features)
+            self.sample_to_basin[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
+                            (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
+                (indices_X_time_features, static_features, indices_to_include_months)
             indices_Y, y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
             mu_y = y.mean()
             std_y = y.std()
-            self.start_end_indices_basins[(i * (time_span - self.seq_length + 1 - self.lead),
-                                           (i + 1) * (time_span - self.seq_length + 1 - self.lead))] = \
+            self.start_end_indices_basins[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
+                                (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
                 (indices_Y, y, mu_y, std_y)
             self.basin_name_to_mean_std_y[basin] = (mu_y, std_y)
             if not self.include_static:
                 self.num_attributes = 0
+        self.x = self.x[indices_to_include_months, :, :, :]
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
         print("Number of features should be: num_features + num_attributes= {0}".format(

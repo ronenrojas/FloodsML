@@ -123,12 +123,12 @@ class TestNewGetItemMethod(unittest.TestCase):
         for i in range(ds_train_old.num_samples):
             t1, _ = ds_train_old[i]
             t2, _ = ds_train_new[i]
-            plt.imshow(t1.sum(axis=0)[:-4].reshape(22, 38))
-            plt.show()
-            plt.imshow(t2.sum(axis=0)[:-4].reshape(22, 38))
-            plt.show()
+            # plt.imshow(t1.sum(axis=0)[:-4].reshape(22, 38))
+            # plt.show()
+            # plt.imshow(t2.sum(axis=0)[:-4].reshape(22, 38))
+            # plt.show()
             print("number of sample is: {}".format(i))
-            abs_t1_t2 = np.abs(t1[i, :-4] - t2[i, :-4])
+            abs_t1_t2 = np.abs(t1[i, :] - t2[i, :])
             indices = np.argwhere(abs_t1_t2 > 0.00000001)
             print("The number of not equal items is: {}".format(indices.size()))
             print("The biggest difference is: {}".format(abs_t1_t2.argmax()))

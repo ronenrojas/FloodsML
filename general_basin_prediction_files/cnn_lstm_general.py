@@ -13,10 +13,11 @@ import pathlib
 import pytz
 import os
 import matplotlib.dates as mdates
-import json
 from LSTM import CNNLSTM
 from preprocess_data import Preprocessor
 from Godavari import IMDGodavari
+from captum.attr import IntegratedGradients
+
 
 root_dir = str(Path(os.getcwd()).parent)
 RUN_LOCALLY = True
@@ -82,6 +83,7 @@ def train_epoch(device, model, optimizer, loader, loss_func, epoch):
 def eval_model(device, model, loader) -> Tuple[torch.Tensor, torch.Tensor]:
     """Evaluate the model.
 
+    :param device:
     :param model: A torch.nn.Module implementing the LSTM model
     :param loader: A PyTorch DataLoader, providing the data.
 
@@ -93,7 +95,6 @@ def eval_model(device, model, loader) -> Tuple[torch.Tensor, torch.Tensor]:
     obs = []
     preds = []
     # in inference mode, we don't need to store intermediate steps for
-    # backprob
     with torch.no_grad():
         # request mini-batch of data from the loader
         for xs, ys in loader:
@@ -103,7 +104,6 @@ def eval_model(device, model, loader) -> Tuple[torch.Tensor, torch.Tensor]:
             y_hat = model(xs)
             obs.append(ys)
             preds.append(y_hat)
-
     return torch.cat(obs), torch.cat(preds)
 
 
@@ -390,6 +390,137 @@ def main():
     ax.set_xlabel("Date")
     ax.grid('on')
     _ = ax.set_ylabel("Discharge (mm/d)")
+    """# Integrated gradients"""
+    # Calculate Integrated Gradients
+    start_date_ig = (2012, 8, 26)
+    end_date_ig = (2012, 9, 5)
+    model.eval()
+    model.cpu()
+    ig = IntegratedGradients(model, multiply_by_inputs=True)
+    basline = torch.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    integ_grad = np.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    for i in idx:
+        integ_grad += ig.attribute(ds_val.x[i:(i + 1), :, :], basline).numpy()
+    integ_grad = np.squeeze(integ_grad)
+    integ_grad /= len(idx)
+    _ = model.cuda()
+
+    image_grad = integ_grad[:, :DEFAULT_LAT * DEFAULT_LON].reshape((sequence_length, DEFAULT_LAT, DEFAULT_LON))
+    time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
+    spatial_image_grad = np.sum(image_grad, axis=0)
+    atrrib_grade = integ_grad[:, DEFAULT_LAT * DEFAULT_LON:]
+
+    predsmonsoon = preds[np.where((date_range.month >= 6) & (date_range.month <= 10))[0]]
+    obsmonsoon = obs[np.where((date_range.month >= 6) & (date_range.month <= 10))[0]]
+    threshq1 = np.percentile(predsmonsoon, 90)
+    threshq2 = np.percentile(predsmonsoon, 55)
+    # idx = np.asarray([i for i in range(0,len(preds)) if (preds[i]>threshq1) & (preds[i]<threshq2)])
+    idx = np.asarray([i for i in range(0, len(preds)) if (preds[i] > threshq1)])
+    # idx = np.where((preds>threshq1) & (preds<threshq2) & (date_range.month>=6) & (date_range.month<=10))[0]
+    print([threshq1, threshq2, idx.shape])
+    # set model to eval mode (important for dropout)
+    model.eval()
+    model.cpu()
+    ig = IntegratedGradients(model, multiply_by_inputs=True)
+    basline = torch.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    integ_grad = np.zeros(ds_val.x[idx[0]:idx[0] + 1, :, :].shape)
+    for i in idx:
+        # print (i)
+        integ_grad += ig.attribute(ds_val.x[i:(i + 1), :, :], basline).numpy()
+    integ_grad = np.squeeze(integ_grad)
+    integ_grad /= len(idx)
+    _ = model.cuda()
+
+    image_grad = integ_grad[:, :DEFAULT_LAT * DEFAULT_LON].reshape((sequence_length, DEFAULT_LAT, DEFAULT_LON))
+    time_vector_grad = np.sum(image_grad.reshape((image_grad.shape[0], image_grad.shape[1] * image_grad.shape[2])), axis=1)
+    spatial_image_grad = np.sum(image_grad, axis=0)
+    atrrib_grade = integ_grad[:, DEFAULT_LAT * DEFAULT_LON:]
+
+    # integ_file = PATH_ROOT + "Out/integ_grad_2000_2014"
+    # np.save(file=integ_file, arr=integ_grad)
+
+    # Plot Integrated Gradients - Spatial
+    sequence_length_small = 9
+    image_grad_small = image_grad[sequence_length - sequence_length_small:, :]
+    n_w_win = 3
+    n_h_win = int((sequence_length_small + 1) / n_w_win)
+    fig, ax = plt.subplots(n_h_win, n_w_win, figsize=(10 * n_h_win, 6 * n_w_win))
+    max_v = abs(image_grad_small).max()
+    min_v = -max_v
+    for i in range(sequence_length_small):
+        ax.flat[i].set_title(f'Day {i - sequence_length_small}')
+        df = pd.DataFrame(image_grad_small[i, :], index=list(LAT_GRID), columns=list(LON_GRID))
+        sns.heatmap(df[::-1], ax=ax.flat[i], vmin=min_v, vmax=max_v, square=True, cmap='RdYlBu')
+
+    # plot without catchment attributes
+    with plt.style.context('ggplot'):
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15))
+        # ax1.plot(new_date_range, obs[idx], label="observation")
+        # ax1.plot(new_date_range, preds[idx], label="prediction")
+        # ax1.plot(idx, obs[idx], 'x', label="observation")
+        # ax1.plot(idx, preds[idx],'x', label="prediction")
+        ax1.plot(idx, obs[idx], 'x', label="observation")
+        ax1.plot(idx, preds[idx], 'x', label="prediction")
+        ax1.legend()
+        #  ax1.set_title(f"Basin {Validation_basin} discharge>q95")
+        ax1.set_title(f"Basin {Validation_basin}, monsoon, discharge: >q90")
+        # ax1.xaxis.set_tick_params(rotation=90)
+        ax1.set_xlabel("Date")
+        ax1.grid('on')
+        _ = ax1.set_ylabel("Discharge (mm/d)")
+
+        #  df = pd.DataFrame(spatial_image_grad, index =list(LAT_GRID), columns =list(LON_GRID))
+        df = pd.DataFrame(image_grad_small[sequence_length_small - 3, :], index=list(LAT_GRID), columns=list(LON_GRID))
+        #  vmax=np.max(np.abs(spatial_image_grad.flat))
+        vmax = np.max(np.abs(image_grad_small[sequence_length_small - 3, :].flat))
+        sns.heatmap(df[::-1], ax=ax2, square=True, cmap='RdYlBu', vmin=-vmax, vmax=vmax)
+
+        txn = np.arange(-sequence_length + 1, 0 + 1)
+        ax3.plot(txn, time_vector_grad, '-o', color='c')
+        ax3.set_xlabel("Day")
+        ax3.set_ylabel("Integrated gradients")
+        ax3.set_xlim([-sequence_length + 1, 0])
+        ax3.set_xticks(txn)
+
+    # plot
+    with plt.style.context('ggplot'):
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15))
+        ax1.plot(new_date_range, obs[idx], label="observation")
+        ax1.plot(new_date_range, preds[idx], label="prediction")
+        ax1.legend()
+        ax1.set_title(f"Basin {Validation_basin}")
+        # ax1.xaxis.set_tick_params(rotation=90)
+        ax1.set_xlabel("Date")
+        ax1.grid('on')
+        _ = ax1.set_ylabel("Discharge (mm/d)")
+
+        ax2.bar(['Precipitation', "Mean Precipitation", "Aridity", "Area", "Mean elevation"], sum(att),
+                color=['b', 'g', 'g', 'g', 'g'])
+        ax2.plot(['Precipitation', "Mean Precipitation", "Aridity", "Area", "Mean elevation"], [0, 0, 0, 0, 0], 'k')
+        ax2.set_ylabel("Attribute sum integrated gradients")
+
+        txn = np.arange(-sequence_length + 1, 0 + 1)
+        ax3.plot(txn, att[:, 0], '-o', color='c')
+        ax3.set_xlabel("Day")
+        ax3.set_ylabel("Integrated gradients")
+        ax3.set_xlim([-sequence_length + 1, 0])
+        ax3.set_xticks(txn)
+
+    # This cell is for creating the raw data - no need to run this
+    start_date_pd = pd.to_datetime(datetime.datetime(DATA_START_DATE[0], DATA_START_DATE[1], DATA_START_DATE[2], 0, 0))
+    end_date_pd = pd.to_datetime(datetime.datetime(DATA_END_DATE[0], DATA_END_DATE[1], DATA_END_DATE[2], 0, 0))
+    date_range = pd.date_range(start_date_pd, end_date_pd)
+    num_days = len(date_range)
+    num_features = 3
+    h = len(LAT_GRID)
+    w = len(LON_GRID)
+    data = np.zeros((num_days, num_features, h, w))
+    for i, lat_i in enumerate(LAT_GRID):
+        for j, lon_j in enumerate(LON_GRID):
+            x = get_geo_raw_data(lat_i, lon_j, start_date, end_date)
+            data[:, :, i, j] = x
+    out_path = PATH_ROOT + 'Data/'
+    data.tofile(out_path + "raw_data_fixed" + '_'.join([str(_) for _ in data.shape]))
 
 
 if __name__ == '__main__':

@@ -152,7 +152,6 @@ class IMDGodavari(Dataset):
         if len(indices_to_include_months) > 0:
             self.x = self.x[indices_to_include_months, :, :, :]
             self.y = self.y[indices_to_include_months]
-        # Rescaling the label
         # if self.period == 'train':
         #     self.y = self.local_rescale(self.y)
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
@@ -172,7 +171,7 @@ class IMDGodavari(Dataset):
             x_static = None
         return indices_X, x_static
 
-    def local_rescale(self, feature: np.ndarray, mean_std=None) -> np.ndarray:
+    def local_rescale(self, feature: np.ndarray) -> np.ndarray:
         """
         Rescale output features with local mean/std.
           param mean_std:
@@ -181,9 +180,6 @@ class IMDGodavari(Dataset):
           be normalized
         :return: array containing the normalized feature
         """
-        if mean_std:
-            mean_y, std_y = mean_std
-            return feature * std_y + mean_y
         n_basins = len(self.basin_list)
         idx = int(len(feature) / n_basins)
         for i, basin_name in enumerate(self.basin_list):

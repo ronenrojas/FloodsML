@@ -20,7 +20,7 @@ PATH_LABEL = PATH_ROOT + "Data/CWC/"
 PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"
 PATH_MODEL = PATH_ROOT + "cnn_lstm/"
-DISPATCH_FORMAT = "CWC_discharge_{0}_clean"
+DISCHARGE_FORMAT = "CWC_discharge_{0}_clean"
 PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
 FILE_FORMAT = "data_{0}_{1}"
 INCLUDE_STATIC = True
@@ -120,6 +120,8 @@ class TestNewGetItemMethod(unittest.TestCase):
                              lead=lead,
                              include_static=INCLUDE_STATIC)
         print(str(ds_train_old.num_samples) + " " + str(ds_train_new.num_samples))
+        print(str(ds_train_old.std_y) + " " + str(ds_train_new.sample_to_basin_y))
+        print(str(ds_train_old.mean_y) + " " + str(ds_train_new.sample_to_basin_y))
         for i in range(len(ds_train_old)):
             t1, y1 = ds_train_old[i]
             t2, y2 = ds_train_new[i]

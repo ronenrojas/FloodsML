@@ -28,7 +28,7 @@ PATH_LABEL = PATH_ROOT + "Data/CWC/"
 PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"
 PATH_MODEL = PATH_ROOT + "cnn_lstm/"
-DISPATCH_FORMAT = "CWC_discharge_{0}_clean"
+DISCHARGE_FORMAT = "CWC_discharge_{0}_clean"
 PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
 FILE_FORMAT = "data_{0}_{1}"
 

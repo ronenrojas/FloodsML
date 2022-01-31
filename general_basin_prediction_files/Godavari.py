@@ -78,14 +78,13 @@ class IMDGodavari(Dataset):
         for key in self.sample_to_basin_x.keys():
             start_ind = key[0]
             end_ind = key[1]
-            indices_X, static_features, _ = self.sample_to_basin_x[key]
-            mu_y, std_y = self.sample_to_basin_y[key]
+            indices_X, static_features, _, basin_name = self.sample_to_basin_x[key]
+            mu_y, std_y = self.basin_name_to_mean_std_y[basin_name]
             if idx in range(start_ind, end_ind):
                 idx = idx - start_ind
                 x_new = copy.deepcopy(self.x[idx: idx + self.seq_length, :, :, :])
                 y_new = copy.deepcopy(self.y[idx + self.seq_length - 1])
-                if self.period == 'train':
-                    y_new = ((y_new - mu_y) / std_y)
+                y_new = ((y_new - mu_y) / std_y)
                 x_new = np.multiply(x_new, indices_X)
                 x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
                 for i in range(x_new.shape[1]):
@@ -143,7 +142,7 @@ class IMDGodavari(Dataset):
             self.num_samples = len(self.basin_list) * len(indices_to_include_months)
             self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1),
                                     (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
-                (indices_X_time_features, static_features, indices_to_include_months)
+                (indices_X_time_features, static_features, indices_to_include_months, basin)
             self.sample_to_basin_y[(i * (len(indices_to_include_months) - self.seq_length + 1),
                                     (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
                 (mu_y, std_y)
@@ -185,10 +184,10 @@ class IMDGodavari(Dataset):
         for i, basin_name in enumerate(self.basin_list):
             if i == 0:
                 y = feature[i * idx:(i + 1) * idx]
-                y = y * self.basin_name_to_mean_std_y[basin_name][1] + self.basin_name_to_mean_std_y[basin_name][0]
+                y = (y * self.basin_name_to_mean_std_y[basin_name][1]) + self.basin_name_to_mean_std_y[basin_name][0]
             else:
                 y_temp = feature[i * idx:(i + 1) * idx]
-                y_temp = y_temp * self.basin_name_to_mean_std_y[basin_name][1] + \
+                y_temp = (y_temp * self.basin_name_to_mean_std_y[basin_name][1]) + \
                          self.basin_name_to_mean_std_y[basin_name][0]
                 y = np.concatenate([y, y_temp])
         return y

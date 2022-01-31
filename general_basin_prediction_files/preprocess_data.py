@@ -24,7 +24,7 @@ class Preprocessor:
         self.path_loc = self.root_folder + "Data/LatLon/{0}_lat_lon"
         self.path_data_clean = self.root_folder + "data/imd_lat_lon_reduced/"
         self.path_model = self.root_folder + "cnn_lstm/"
-        self.dispatch_format = self.path_label + "cwc_discharge_{0}_clean"
+        self.discharge_format = self.path_label + "cwc_discharge_{0}_clean"
         self.path_catchments = self.root_folder + "data/catchments.xlsx"
         self.file_format = self.root_folder + "data_{0}_{1}"
         self.idx_features = idx_features
@@ -150,7 +150,7 @@ class Preprocessor:
     def get_basin_indices_y(self, basin_name, start_date, end_date):
         # Getting Discharge (how much water are running through
         # specific point / river in a given amount of time - usually cubic metre per second)
-        data_discharge = pd.read_csv(self.dispatch_format.format(basin_name),
+        data_discharge = pd.read_csv(self.discharge_format.format(basin_name),
                                      header=None, delim_whitespace=True)
         idx_start, idx_end = Preprocessor.get_index(data_discharge, start_date), \
                              Preprocessor.get_index(data_discharge, end_date)

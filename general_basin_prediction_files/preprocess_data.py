@@ -58,7 +58,7 @@ class Preprocessor:
                 if "height" in dims_json.keys():
                     image_height = dims_json["height"]
         except Exception as e:
-            print("There was an exception in reading the dims file: {}".format(e))
+            print("There was an exception in reading the dimensions details file: {}".format(e))
         data_ret = np.fromfile(data_file_path).reshape((self.data_len, self.num_channels,
                                                         image_width, image_height))
         return data_ret, image_width, image_height
@@ -156,7 +156,7 @@ class Preprocessor:
                              Preprocessor.get_index(data_discharge, end_date)
         indices_Y = np.linspace(idx_start, idx_end + 1, 1)
         y = np.array(data_discharge[3][idx_start:idx_end + 1])
-        return indices_Y, y
+        return y
 
     def get_index_by_date(self, date_in):
         start_date_pd = pd.to_datetime(datetime.datetime(self.data_start_date[0], self.data_start_date[1],

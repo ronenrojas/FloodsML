@@ -17,6 +17,7 @@ from LSTM import CNNLSTM
 from preprocess_data import Preprocessor
 from Godavari import IMDGodavari
 from captum.attr import IntegratedGradients
+import seaborn as sns
 
 
 root_dir = str(Path(os.getcwd()).parent)
@@ -166,13 +167,13 @@ def calc_bias(obs: np.array, sim: np.array) -> float:
     :return: NSE value.
     """
     bias_95 = None
-    if (np.percentile(obs, 95) != 0):
+    if np.percentile(obs, 95) != 0:
         bias_95 = (np.percentile(sim, 95) - np.percentile(obs, 95)) / np.percentile(obs, 95) * 100
     bias_5 = None
-    if (np.percentile(obs, 5) != 0):
+    if np.percentile(obs, 5) != 0:
         bias_5 = (np.percentile(sim, 5) - np.percentile(obs, 5)) / np.percentile(obs, 5) * 100
     mean_bias = None
-    if (np.nanmean(obs) != 0):
+    if np.nanmean(obs) != 0:
         mean_bias = (np.nanmean(sim) - np.nanmean(obs)) / np.nanmean(obs) * 100
 
     return bias_95, bias_5, mean_bias
@@ -331,7 +332,7 @@ def main():
     for i in range(n_epochs):
         train_epoch(device, model, optimizer, tr_loader, loss_func, i + 1)
         obs, preds = eval_model(device, model, test_loader)
-        preds = ds_test.local_rescale(preds.cpu().numpy())
+        preds = ds_test.revert_normalization_y(preds.cpu().numpy())
         nse = calc_nse(obs.numpy(), preds)
         tqdm.tqdm.write(f"Test NSE: {nse:.3f}")
         model_name = "epoch_{:d}_nse_{:.3f}.ckpt".format(i + 1, nse)
@@ -362,7 +363,7 @@ def main():
                          include_static=include_static)
     val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)
     obs, preds = eval_model(device, model, val_loader)
-    preds = ds_val.local_rescale(preds.cpu().numpy())
+    preds = ds_val.revert_normalization_y(preds.cpu().numpy())
     obs = obs.numpy()
     nse = calc_nse(obs, preds)
     pb95, pb5, total_b = calc_bias(obs, preds)

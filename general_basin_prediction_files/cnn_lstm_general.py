@@ -332,7 +332,7 @@ def main():
     for i in range(n_epochs):
         train_epoch(device, model, optimizer, tr_loader, loss_func, i + 1)
         obs, preds = eval_model(device, model, test_loader)
-        preds = ds_test.revert_normalization_y(preds.cpu().numpy())
+        preds = ds_test.revert_y_normalization(preds.cpu().numpy(), "")
         nse = calc_nse(obs.numpy(), preds)
         tqdm.tqdm.write(f"Test NSE: {nse:.3f}")
         model_name = "epoch_{:d}_nse_{:.3f}.ckpt".format(i + 1, nse)
@@ -363,7 +363,7 @@ def main():
                          include_static=include_static)
     val_loader = DataLoader(ds_val, batch_size=2048, shuffle=False)
     obs, preds = eval_model(device, model, val_loader)
-    preds = ds_val.revert_normalization_y(preds.cpu().numpy())
+    preds = ds_val.revert_y_normalization(preds.cpu().numpy(), "")
     obs = obs.numpy()
     nse = calc_nse(obs, preds)
     pb95, pb5, total_b = calc_bias(obs, preds)

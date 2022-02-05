@@ -26,8 +26,7 @@ class IMDGodavari(Dataset):
                  idx: list = [True, True, True],
                  lead=0,
                  mask_list=[0, 0.5, 0.5],
-                 include_static:
-                 np.bool = True):
+                 include_static: np.bool = True):
         """Initialize Dataset containing the data of a single basin.
         :param basin_list: List of basins.
         :param seq_length: Length of the time window of meteorological
@@ -62,7 +61,7 @@ class IMDGodavari(Dataset):
     # The number of samples is: (the original number of samples (timestamps) - sequence length) * number of basins
     # each samples is of size: (sequence length * number of features ((width * height * channels) + static features))
     def __len__(self):
-        return self.num_samples - 2 * (self.seq_length + 1 - self.lead)
+        return self.num_samples - (len(self.basin_list) * self.seq_length) - self.lead + 2
 
     # each call to __getitem__ should return ONE sample, which is of size
     # (sequence length * number of features (channels * width * height))
@@ -112,7 +111,6 @@ class IMDGodavari(Dataset):
         # temperature, maximum temperature)
         data = all_data[idx_s:idx_e + 1, self.idx_features, :, :]
         self.x = copy.deepcopy(all_data[idx_s:idx_e + 1, self.idx_features, :, :])
-        time_span = data.shape[0]
         self.num_features = data.shape[1] * data.shape[2] * data.shape[3]
         indices_to_include_months = []
         for i, basin in enumerate(self.basin_list):
@@ -138,17 +136,18 @@ class IMDGodavari(Dataset):
                 _, y_new = self.extract_from_data_by_months(y, start_date, end_date,
                                                             basin_name=basin)
                 self.y = np.concatenate([self.y, y_new], axis=0)
-            self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1),
-                                    (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
+            self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
+                                    (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
                 (indices_X_time_features, static_features, indices_to_include_months)
-            self.sample_to_basin_name[(i * (len(indices_to_include_months) - self.seq_length + 1),
-                                       (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
+            self.sample_to_basin_name[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
+                                       (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
                 basin
         self.num_samples = len(self.basin_list) * len(indices_to_include_months)
         if not self.include_static:
             self.num_attributes = 0
         if len(indices_to_include_months) > 0:
             self.x = self.x[indices_to_include_months, :, :, :]
+        time_span = self.x.shape[0]
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
         print("Number of features should be: num_features + num_attributes= {0}".format(

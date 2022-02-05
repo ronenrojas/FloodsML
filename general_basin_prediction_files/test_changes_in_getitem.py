@@ -88,7 +88,7 @@ class TestNewGetItemMethod(unittest.TestCase):
         idx_features = [use_perc, use_t_max, use_t_min]
         basin_list = ['Tekra', "Perur"]
         start_date = (2000, 1, 1)
-        end_date = (2009, 12, 31)
+        end_date = (2001, 12, 31)
         preprocessor = Preprocessor(PATH_ROOT, idx_features, start_date, end_date, LAT_MIN,
                                     LAT_MAX, LON_MIN, LON_MAX, GRID_DELTA, DATA_LEN, NUM_CHANNELS)
         # The data will always be in shape of - samples * channels * width * height

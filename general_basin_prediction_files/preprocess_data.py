@@ -154,7 +154,6 @@ class Preprocessor:
                                      header=None, delim_whitespace=True)
         idx_start, idx_end = Preprocessor.get_index(data_discharge, start_date), \
                              Preprocessor.get_index(data_discharge, end_date)
-        indices_Y = np.linspace(idx_start, idx_end + 1, 1)
         y = np.array(data_discharge[3][idx_start:idx_end + 1])
         return y
 

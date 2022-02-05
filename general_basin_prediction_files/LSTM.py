@@ -35,7 +35,8 @@ class CNNLSTM(nn.Module):
         """
         # x is of size:
         # 1. batch_size (some sample of all the training set)
-        # 2. times_steps - the length of the sequence (for example 30, if we are talking about one month)
+        # 2. times_steps - the length of the sequence (for example 30,
+        # if we are talking about one month)
         # 3. (num_channels*H_LAT*W_LON + 4)
         # the 4 is for the 4 static features
         # for example, currently, x.size() is - (64, 30, 840)

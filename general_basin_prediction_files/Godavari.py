@@ -61,7 +61,7 @@ class IMDGodavari(Dataset):
     # The number of samples is: (the original number of samples (timestamps) - sequence length) * number of basins
     # each samples is of size: (sequence length * number of features ((width * height * channels) + static features))
     def __len__(self):
-        return self.num_samples - (len(self.basin_list) * self.seq_length) - self.lead + 2
+        return self.num_samples
 
     # each call to __getitem__ should return ONE sample, which is of size
     # (sequence length * number of features (channels * width * height))
@@ -125,24 +125,22 @@ class IMDGodavari(Dataset):
             y = self.preprocessor.get_basin_indices_y(basin, start_date, end_date)
             if self.period == 'train':
                 mu_y = y.mean()
+                print("Y mean is:", mu_y)
                 std_y = y.std()
+                print("Y std is:", std_y)
                 y = ((y - mu_y) / std_y)
                 self.basin_name_to_mean_std_y[basin] = (mu_y, std_y)
-            if i == 0:
-                indices_to_include_months, y_new = self.extract_from_data_by_months(y, start_date, end_date,
-                                                                                    basin_name=basin)
-                self.y = y_new
-            else:
-                _, y_new = self.extract_from_data_by_months(y, start_date, end_date,
-                                                            basin_name=basin)
-                self.y = np.concatenate([self.y, y_new], axis=0)
+            indices_to_include_months, y_new = self.extract_from_data_by_months(y, start_date, end_date,
+                                                                                basin_name=basin)
+            self.y = y_new
             self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
                                     (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
                 (indices_X_time_features, static_features, indices_to_include_months)
             self.sample_to_basin_name[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
                                        (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
                 basin
-        self.num_samples = len(self.basin_list) * len(indices_to_include_months)
+        self.num_samples = len(self.basin_list) * (len(indices_to_include_months)
+                                                   - self.seq_length + 1 - self.lead)
         if not self.include_static:
             self.num_attributes = 0
         if len(indices_to_include_months) > 0:
@@ -178,12 +176,15 @@ class IMDGodavari(Dataset):
                 raise RuntimeError(
                     f"Unknown Basin {basin_name}, the "
                     f"training data was trained on {list(self.basin_name_to_mean_std_y.keys())}")
+            y_mean = self.basin_name_to_mean_std_y[basin_name][0]
+            y_std = self.basin_name_to_mean_std_y[basin_name][1]
+            print("Y mean and std in renormalization is: {} {}".format(y_mean, y_std))
             if i == 0:
                 y = y_orig[i * idx:(i + 1) * idx]
-                y = y * self.basin_name_to_mean_std_y[basin_name][1] + self.basin_name_to_mean_std_y[basin_name][0]
+                y = (y * y_std) + y_mean
             else:
                 y_temp = y_orig[i * idx:(i + 1) * idx]
-                y_temp = y_temp * self.basin_name_to_mean_std_y[basin_name][1] + self.basin_name_to_mean_std_y[basin_name][0]
+                y_temp = (y_temp * y_std) + y_mean
                 y = np.concatenate([y, y_temp], axis=0)
         return y
 
@@ -192,6 +193,7 @@ class IMDGodavari(Dataset):
         if self.period == 'train':
             y = self.revert_y_normalization(y, basin_name)
         # getting the months for each date
+        print("Y mean after renormalization is:", y.mean())
         date_months = self.get_months_by_dates(start_date, end_date)
         # adjusting for sequence length and lead
         date_months = date_months[(self.seq_length + self.lead - 1):]

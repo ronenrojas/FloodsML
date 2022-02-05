@@ -30,7 +30,7 @@ PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"
 PATH_MODEL = PATH_ROOT + "cnn_lstm/"
 DISCHARGE_FORMAT = "CWC_discharge_{0}_clean"
-PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
+PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.csv"
 FILE_FORMAT = "data_{0}_{1}"
 
 # Lat - width, Lon - height

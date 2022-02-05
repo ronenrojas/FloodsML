@@ -173,8 +173,7 @@ class IMDGodavari(Dataset):
             x_static = None
         return indices_X, x_static
 
-    def revert_y_normalization(self, feature: np.ndarray, basin_name) -> np.ndarray:
-        y = feature
+    def revert_y_normalization(self, y: np.ndarray, basin_name) -> np.ndarray:
         y = y * self.basin_name_to_mean_std_y[basin_name][1] + \
             self.basin_name_to_mean_std_y[basin_name][0]
         return y

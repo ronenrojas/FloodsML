@@ -24,7 +24,7 @@ class Preprocessor:
         self.path_loc = self.root_folder + "Data/LatLon/{0}_lat_lon"
         self.path_data_clean = self.root_folder + "data/imd_lat_lon_reduced/"
         self.path_model = self.root_folder + "cnn_lstm/"
-        self.discharge_format = self.path_label + "cwc_discharge_{0}_clean"
+        self.discharge_format = self.path_label + "CWC_discharge_{0}_clean"
         self.path_catchments = self.root_folder + "data/catchments.xlsx"
         self.file_format = self.root_folder + "data_{0}_{1}"
         self.idx_features = idx_features
@@ -80,7 +80,7 @@ class Preprocessor:
 
     @staticmethod
     def create_catchment_dict(sheet_path):
-        df = pd.read_excel(sheet_path, index_col=0).dropna().T
+        df = pd.read_csv(sheet_path, index_col=0).dropna().T
         means = df.mean().values
         stds = df.std(ddof=0).values
         x = df.values

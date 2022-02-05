@@ -47,7 +47,7 @@ PATH_LOC = PATH_ROOT + "Data/LatLon/{0}_lat_lon"
 PATH_DATA_CLEAN = PATH_ROOT + "Data/IMD_Lat_Lon_reduced/"
 PATH_MODEL = PATH_ROOT + "cnn_lstm/"
 DISCH_FORMAT = "CWC_discharge_{0}_clean"
-PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.xlsx"
+PATH_CATCHMENTS = PATH_ROOT + "Data/catchments.csv"
 FILE_FORMAT = "data_{0}_{1}"
 
 LAT_MIN = 17.375
@@ -107,7 +107,7 @@ INCLUDE_STATIC = True
 
 
 def create_catchment_dict(sheet_path):
-    df = pd.read_excel(sheet_path, index_col=0).dropna().T
+    df = pd.read_csv(sheet_path, index_col=0).dropna().T
     means = df.mean().values
     stds = df.std(ddof=0).values
     x = df.values

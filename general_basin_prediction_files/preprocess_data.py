@@ -80,7 +80,7 @@ class Preprocessor:
 
     @staticmethod
     def create_catchment_dict(sheet_path):
-        df = pd.read_csv(sheet_path, index_col=0).dropna().T
+        df = pd.read_csv(sheet_path, quotechar='"', index_col=0).dropna().T
         means = df.mean().values
         stds = df.std(ddof=0).values
         x = df.values

@@ -23,15 +23,11 @@ class IMDGodavari(Dataset):
                  period: str = None,
                  dates: List = None,
                  months: List = None,
-                 min_values: np.array = None,
-                 max_values: np.array = None,
                  idx: list = [True, True, True],
                  lead=0,
                  mask_list=[0, 0.5, 0.5],
                  include_static:
-                 np.bool = True,
-                 mean_y=None,
-                 std_y=None):
+                 np.bool = True):
         """Initialize Dataset containing the data of a single basin.
         :param basin_list: List of basins.
         :param seq_length: Length of the time window of meteorological
@@ -40,6 +36,8 @@ class IMDGodavari(Dataset):
         :param period: (optional) One of ['train', 'eval']. None loads the entire time series.
         :param dates: (optional) List of the start and end date of the discharge period that is used.
         """
+        self.max_values = None
+        self.min_values = None
         self.num_samples = 0
         self.x = None
         self.y = None
@@ -51,17 +49,13 @@ class IMDGodavari(Dataset):
         self.period = period
         self.dates = dates
         self.months = months
-        self.min_values = min_values
-        self.max_values = max_values
-        self.mean_y = mean_y
-        self.std_y = std_y
         self.idx_features = idx
         self.lead = lead
         self.mask_list = mask_list
         self.num_features = None
         self.include_static = include_static
         self.sample_to_basin_x = {}
-        self.sample_to_basin_y = {}
+        self.sample_to_basin_name = {}
         self.basin_name_to_mean_std_y = {}
         self.load_data(all_data)
 
@@ -121,7 +115,6 @@ class IMDGodavari(Dataset):
         time_span = data.shape[0]
         self.num_features = data.shape[1] * data.shape[2] * data.shape[3]
         indices_to_include_months = []
-        previous_num_samples_basin = 0
         for i, basin in enumerate(self.basin_list):
             indices_X, static_features = self.get_basin_indices_x_and_static_features(basin)
             indices_X_time_features = np.ones((self.seq_length, len([x for x in self.idx_features if x]),
@@ -148,8 +141,8 @@ class IMDGodavari(Dataset):
             self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1),
                                     (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
                 (indices_X_time_features, static_features, indices_to_include_months)
-            self.sample_to_basin_y[(i * (len(indices_to_include_months) - self.seq_length + 1),
-                                    (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
+            self.sample_to_basin_name[(i * (len(indices_to_include_months) - self.seq_length + 1),
+                                       (i + 1) * (len(indices_to_include_months) - self.seq_length + 1))] = \
                 basin
         self.num_samples = len(self.basin_list) * len(indices_to_include_months)
         if not self.include_static:
@@ -173,9 +166,26 @@ class IMDGodavari(Dataset):
             x_static = None
         return indices_X, x_static
 
-    def revert_y_normalization(self, y: np.ndarray, basin_name) -> np.ndarray:
-        y = y * self.basin_name_to_mean_std_y[basin_name][1] + \
-            self.basin_name_to_mean_std_y[basin_name][0]
+    def revert_y_normalization(self, y_orig: np.ndarray, basin_name="") -> np.ndarray:
+        if basin_name != "":
+            list_basins_to_rescale = [basin_name]
+        else:
+            list_basins_to_rescale = self.basin_list
+        n_basins = len(list_basins_to_rescale)
+        idx = int(len(y_orig) / n_basins)
+        y = np.array([])
+        for i, basin_name in enumerate(list_basins_to_rescale):
+            if basin_name not in self.basin_name_to_mean_std_y.keys():
+                raise RuntimeError(
+                    f"Unknown Basin {basin_name}, the "
+                    f"training data was trained on {list(self.basin_name_to_mean_std_y.keys())}")
+            if i == 0:
+                y = y_orig[i * idx:(i + 1) * idx]
+                y = y * self.basin_name_to_mean_std_y[basin_name][1] + self.basin_name_to_mean_std_y[basin_name][0]
+            else:
+                y_temp = y_orig[i * idx:(i + 1) * idx]
+                y_temp = y_temp * self.basin_name_to_mean_std_y[basin_name][1] + self.basin_name_to_mean_std_y[basin_name][0]
+                y = np.concatenate([y, y_temp], axis=0)
         return y
 
     def extract_from_data_by_months(self, y, start_date, end_date, basin_name):
@@ -205,17 +215,6 @@ class IMDGodavari(Dataset):
         months = [date_range[i].month for i in range(0, len(date_range))]
         return months
 
-    def get_min(self):
-        return self.min_values
-
-    def get_max(self):
-        return self.max_values
-
-    def get_mean_y(self):
-        return self.mean_y
-
-    def get_std_y(self):
-        return self.std_y
-
     def get_num_features(self):
         return self.num_features
+

@@ -343,7 +343,8 @@ class IMDGodavari(Dataset):
         print(['1: ', x.shape, y.shape], 'Original size')
         x, y = reshape_data_basins(x, np.matrix(y).T, self.seq_length, self.basin_list, self.lead)
         print(['2: ', x.shape, y.shape], 'After reshape and trimming sequence and lead')
-        x, y = self.get_monthly_data(x, y, start_date, end_date)
+        if len(self.months) > 0:
+            x, y = self.get_monthly_data(x, y, start_date, end_date)
         print(['3: ', x.shape, y.shape], 'Monthly pick')
         print("Data set for {0} for basins: {1}".format(self.period, self.basin_list))
         print("Number of attributes should be: {0}".format(self.num_attributes))
@@ -392,10 +393,10 @@ class IMDGodavari(Dataset):
                     f"Unknown Basin {basin_name}, the trainig data was trained on {list(self.mean_y.keys())}")
             if i == 0:
                 y = feature[i * idx:(i + 1) * idx]
-                y = y * self.std_y[basin_name] + self.mean_y[basin_name]
+                y = (y * self.std_y[basin_name]) + self.mean_y[basin_name]
             else:
                 y_temp = feature[i * idx:(i + 1) * idx]
-                y_temp = y_temp * self.std_y[basin_name] + self.mean_y[basin_name]
+                y_temp = (y_temp * self.std_y[basin_name]) + self.mean_y[basin_name]
                 y = np.concatenate([y, y_temp])
         return y
 
@@ -415,8 +416,8 @@ class IMDGodavari(Dataset):
             return x, y
         else:
             # Rescaling the label
-            # if self.period == 'train':
-            #     y = self.local_rescale(y, 'output')
+            if self.period == 'train':
+                y = self.local_rescale(y, 'output')
             # getting the months for each date
             date_months = get_months_by_dates(start_date, end_date)
             # Adjusting for sequence length and lead

@@ -54,7 +54,7 @@ class IMDGodavari(Dataset):
         self.num_features = None
         self.include_static = include_static
         self.sample_to_basin_x = {}
-        self.sample_to_basin_name = {}
+        self.sample_to_basin_name_y = {}
         self.basin_name_to_mean_std_y = {}
         self.load_data(all_data)
 
@@ -66,40 +66,41 @@ class IMDGodavari(Dataset):
     # each call to __getitem__ should return ONE sample, which is of size
     # (sequence length * number of features (channels * width * height))
     def __getitem__(self, idx: int):
-        x_new = None
-        y_new = None
+        x_sample = None
+        y_label = None
         for key in self.sample_to_basin_x.keys():
             start_ind = key[0]
             end_ind = key[1]
-            indices_X, static_features, _ = self.sample_to_basin_x[key]
             if idx in range(start_ind, end_ind):
+                indices_X, static_features, _ = self.sample_to_basin_x[key]
+                basin_name, y = self.sample_to_basin_name_y[key]
                 idx = idx - start_ind
-                x_new = copy.deepcopy(self.x[idx: idx + self.seq_length, :, :, :])
-                y_new = copy.deepcopy(self.y[idx + self.seq_length - 1])
-                x_new = np.multiply(x_new, indices_X)
-                x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1], x_new.shape[2] * x_new.shape[3]))
+                x_sample = copy.deepcopy(self.x[idx: idx + self.seq_length, :, :, :])
+                y_label = y[idx]
+                x_sample = np.multiply(x_sample, indices_X)
+                x_sample = np.reshape(x_sample, (x_sample.shape[0], x_sample.shape[1], x_sample.shape[2] * x_sample.shape[3]))
                 if self.period == 'train':
-                    for i in range(x_new.shape[1]):
-                        x_new[:, i, :] -= self.min_values[i]
-                        x_new[:, i, :] /= (self.max_values[i] - self.min_values[i])
-                x_new = np.reshape(x_new, (x_new.shape[0], x_new.shape[1] * x_new.shape[2]))
+                    for i in range(x_sample.shape[1]):
+                        x_sample[:, i, :] -= self.min_values[i]
+                        x_sample[:, i, :] /= (self.max_values[i] - self.min_values[i])
+                x_sample = np.reshape(x_sample, (x_sample.shape[0], x_sample.shape[1] * x_sample.shape[2]))
                 if self.include_static:
                     static_features = static_features[np.newaxis, :]
-                    static_features = np.repeat(static_features, x_new.shape[0], axis=0)
-                    x_new = np.concatenate([x_new, static_features], axis=1)
+                    static_features = np.repeat(static_features, x_sample.shape[0], axis=0)
+                    x_sample = np.concatenate([x_sample, static_features], axis=1)
                 break
         end_indices = [key[1] for key in self.sample_to_basin_x.keys()]
         start_indices = [key[0] for key in self.sample_to_basin_x.keys()]
-        if x_new is None or y_new is None:
+        if x_sample is None or y_label is None:
             print("Error - the requested to be retrieved is not in the "
                   "range of start_ind, end_ind. "
                   "The requested index is: {}, the start indices are: "
                   "{}, the end indices are: {}".format(idx,
                                                        start_indices,
                                                        end_indices))
-        x_new = torch.from_numpy(x_new.astype(np.float32))
-        y_new = torch.tensor(y_new.astype(np.float32))
-        return x_new, y_new
+        x_sample = torch.from_numpy(x_sample.astype(np.float32))
+        y_label = torch.tensor(y_label.astype(np.float32))
+        return x_sample, y_label
 
     def load_data(self, all_data):
         """Load input and output data from text files"""
@@ -131,14 +132,13 @@ class IMDGodavari(Dataset):
                 y = ((y - mu_y) / std_y)
                 self.basin_name_to_mean_std_y[basin] = (mu_y, std_y)
             indices_to_include_months, y_new = self.extract_from_data_by_months(y, start_date, end_date,
-                                                                                basin_name=basin)
-            self.y = y_new
+                                                                                basin_name=basin, basin_number=i)
             self.sample_to_basin_x[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
                                     (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
                 (indices_X_time_features, static_features, indices_to_include_months)
-            self.sample_to_basin_name[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
-                                       (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
-                basin
+            self.sample_to_basin_name_y[(i * (len(indices_to_include_months) - self.seq_length + 1 - self.lead),
+                                         (i + 1) * (len(indices_to_include_months) - self.seq_length + 1 - self.lead))] = \
+                (basin, y_new)
         self.num_samples = len(self.basin_list) * (len(indices_to_include_months)
                                                    - self.seq_length + 1 - self.lead)
         if not self.include_static:
@@ -188,19 +188,22 @@ class IMDGodavari(Dataset):
                 y = np.concatenate([y, y_temp], axis=0)
         return y
 
-    def extract_from_data_by_months(self, y, start_date, end_date, basin_name):
+    def extract_from_data_by_months(self, y, start_date, end_date, basin_name, basin_number):
         # reverting normalization to Y as we are going to normalize it again at the end
-        if self.period == 'train':
-            y = self.revert_y_normalization(y, basin_name)
-        # getting the months for each date
-        print("Y mean after renormalization is:", y.mean())
         date_months = self.get_months_by_dates(start_date, end_date)
         # adjusting for sequence length and lead
         date_months = date_months[(self.seq_length + self.lead - 1):]
-        ind_date_months = [i for i in range(0, len(y) - (self.seq_length + self.lead - 1)) if
-                           date_months[i] in self.months]
-        idx_temp = [idx for idx in ind_date_months]
-        y_new = y[idx_temp]
+        ind_date_months = [i for i in range(0, len(y) - (self.seq_length + self.lead - 1))]
+        y_new = np.zeros((len(y) - self.seq_length + 1,))
+        y_new[:] = y[self.seq_length - 1:]
+        if len(self.months) == 0:
+            return ind_date_months, y_new
+        if self.period == 'train':
+            y_new = self.revert_y_normalization(y_new, basin_name)
+        # getting the months for each date
+        print("Y mean after renormalization is:", y_new.mean())
+        idx_temp = [idx for idx in ind_date_months if date_months[idx] in self.months]
+        y_new = y_new[idx_temp]
         if self.period == 'train':
             mu_y_temp = y_new.mean()
             std_y_temp = y_new.std()

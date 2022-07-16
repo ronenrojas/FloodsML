@@ -10,7 +10,9 @@
 *.nav
 *.exe
 *.o
+*.png
 LabReport/*.pdf
 .idea/
 .vscode/
 __pycache__/
+exp-hydro/.vs/

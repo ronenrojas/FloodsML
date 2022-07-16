@@ -1,13 +1,22 @@
 from DREAM.dream import Dream
 from SAC_SMA.sac_sma import SacSma
 import matplotlib.pyplot as plt
+import numpy as np
 
 if __name__ == '__main__':
     dream_sim = Dream(param_file="Dream/Par.csv")
-    dream_sim.read_input("Dream/Data/synth_data_1.csv")
+    dream_sim.read_input("Dream/Data/synth_data_newtest2.csv")
     dream_sim.simulate()
+    print(np.sum(dream_sim.output_dict['runoff']) / np.sum(dream_sim.input_dict['precip']))
     dream_sim.plot()
-    dream_sim.out_to_csv("Dream/rundir/output_data_1.csv")
+    dream_sim.out_to_csv("Dream/rundir/output_data_newtest2.csv")
+
+    dream_sim.read_input("Dream/Data/synth_data_newtest1.csv")
+    dream_sim.simulate()
+    print(np.sum(dream_sim.output_dict['runoff']) / np.sum(dream_sim.input_dict['precip']))
+    dream_sim.plot()
+    dream_sim.out_to_csv("Dream/rundir/output_data_newtest1.csv")
+
     """
     sac = SacSma(param_file="SAC_SMA\\C\\par_update.in")
     sac.read_input("Data/Data.csv")

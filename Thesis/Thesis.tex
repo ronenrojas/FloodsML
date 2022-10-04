@@ -1,0 +1,418 @@
+\documentclass[12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{mathtools}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{bbm}
+\usepackage{indentfirst}
+\usepackage{blindtext}
+\usepackage{titlesec}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{braket}
+\usepackage{tikz}
+\usetikzlibrary{quantikz}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{MnSymbol,wasysym}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+\usepackage[style=alphabetic]{biblatex}
+\addbibresource{thesis.bib}
+
+
+
+
+\title{
+	{Interpretability evaluation framework: \\ Aspects in Machine learning and hydrology domain applications}\\
+	{\large School of Computer Science and Engineering - 
+		Institute of Earth Sciences}\\
+	{\large Hebrew University}
+}
+\author{Ronen Rojas}
+\date{August 2022}
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\chapter{Abstract} 
+
+\textcolor{red}{Short overview, write this at the end.}
+
+
+
+\newpage
+\chapter{Introduction} 
+
+In recent years machine learning models became the "go-to" solution for almost every task of estimation or prediction. It has Replaced the somewhat tedious task of trying to manually extract insights from the data.\\
+
+It is definitely easier in a sense to let the computer "learn" from the data whatever it needs, all you need is a strong GPU and good clean data, once you've got all your ducks in a row you're good to go. The performance of these kind of models is uncanny and unprecedented (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}).\\
+
+But with great power comes great responsibility, how do we explain a model prediction in a sensible manner. Most models are considered to be \textit{"black boxes"} and humanly incomprehensible. Given a machine learning model we are now interested more on "why" and less on "what" and most of the time a simple accuracy metric is not enough. This fact gave rise to significant development in the field interpretability methods 
+\cite{molnar2019}. \\
+
+Interpretability tries to tackle this issue and tries to answer these lines of questions:
+\begin{itemize}
+	\item \textit{Why did the model made that prediction ?}	
+	\item \textit{Do we have a human-friendly explanation for this prediction ?}	
+	\item \textit{Can we visualize this explanation ? }	
+\end{itemize}
+
+Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach 
+\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668},  while some do so
+from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Evaluation of interpretability methods is somewhat tricky in this sense , how does someone define a good explanation ? at the end some work better then others on different types of models and different types of data-set. This actually motivated use to refine and explore this notion.  
+
+
+\newpage
+
+\chapter{Literature review} 
+
+In this chapter we'll review recent work for frameworks of evaluating interpretability methods and what data-sets were used. We're also going to review the interpretability method used in the current framework
+
+\section{Interpretability methods frameworks and metrics}
+
+There has been a line of study to treat explains of interpretability methods a.k.a attributes as feature importance \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758}.  These works ask what will happen if we "remove" these features from the input strategically?  what will happen to model predictions now?, if we remove from most to least important we will probably see degradation this can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
+
+By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" taking out the most important feature the model quicker in a sense this method is better and vice versa if we took the least important features.\\
+
+
+\textcolor{red}{Paragraph about the methods ROAR , KAR, MORF, LEVF} \\
+
+
+\textcolor{red}{Paragraph about the metrics AOPC, SSIM} \\
+
+Another line of study is let interpretability method be a debug tool for the model itself \cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}. This line of work studies how sensitive an interpretability method is to contamination of the learning process of a model. If an interpretability method is sensitive to a model that trained or tested in an ill manner compered to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself.  \\
+
+\textcolor{red}{Paragraph about the modes were the model was disrupted} \\
+
+\textcolor{red}{Paragraph about the metrics used} \\
+
+
+
+
+
+\newpage
+\section{Interpretability methods}
+
+
+
+
+
+
+
+
+\subsection{Grad }
+	\textcolor{red}{short paragraph about method} \cite{baehrens2010explain}, \cite{https://doi.org/10.48550/arxiv.1312.6034}
+
+\subsection{Smooth Grad}
+
+	\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SmilkovTKVW17}
+
+\subsection{VarGrad}
+
+	\textcolor{red}{Paragraph about method} \ \cite{DBLP:journals/corr/abs-1810-03307}
+
+\subsection{Smooth Grad Square SG-SQ}
+		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1806.10758}
+
+\subsection{Integrated Gradients}
+
+		\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SundararajanTY17}
+
+\subsection{Local Integrated Gradients}
+		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1711.06104}
+
+\subsection{Shapely Value Sampling}
+		\textcolor{red}{Paragraph about method} \cite{CASTRO20091726}, \cite{trumbelj2010AnEE}
+
+\subsection{Deep Lift SHAP}
+		\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/LundbergL17}
+
+
+\subsection{local Deep lift SHAP}
+
+		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1711.06104}
+
+\subsection{Feature Ablation}
+"A perturbation based approach to computing attribution, involving replacing each input feature with a given baseline / reference, and computing the difference in output. By default, each scalar value within each input tensor is taken as a feature and replaced independently. Passing a feature mask, allows grouping features to be ablated together. This can be used in cases such as images, where an entire segment or region can be ablated, measuring the importance of the segment (feature group). Each input scalar in the group will be given the same attribution value equal to the change in target as a result of ablating the entire feature group."
+
+\newpage
+\section{Recognized gap}
+
+There seems to be a knowledge gap on how to
+effectively evaluate and validate any given interpretability method.
+
+
+
+\chapter{Research objective } 
+
+We offer a framework for evaluating an interpretability method. Our approach can be summarized in
+the following scheme [Figure1]:
+1. Generate a 2-modal data-set.
+2. Train a machine learning model on the data set.
+3. Train two classifiers for the modalities of the data set:
+a. A clean view – training only with the data set.
+b. An interpreted view – training only with attributes of the trained model.
+4. Evaluate interpretability method by comparison of the clean classifier to interpreted classifier
+with simple classification metrics
+
+\chapter{Methods} 
+\section{Data}
+\subsection{DREAM}
+\subsection{CARAVAN}
+
+\section{Models}
+\subsection{Feed Forward Neural Network}
+
+\subsubsection{Neural Network - Introduction}
+\begin{itemize}
+	\item $y = f_{W}(x), x \in \mathbb{R}^n, y \in \mathbb{R}^m$ 
+	\item $W$ Learn-able parameters
+	\item Data set $\{x_i, y_i \}_{i=1}^k$
+	\item Loss function $L(f(x_i), y_i)$
+	\item Gradient decent $W_t = W_{t-1} + \alpha \nabla_{W}L(x,y) $ 
+\end{itemize}
+
+\begin{figure}[H]\centering\includegraphics[width=6cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
+
+\newpage
+\subsubsection{Neural Network - Function definitions}
+\begin{itemize}
+	\item Affine layer $y = Ax + b , x \in \mathbb{R}^n, b, y \in \mathbb{R}^m, A \in \mathbb{R}^{m \times n}$
+	\item Activation point wise
+	\begin{itemize}
+		\item $\sigma_g(z) = \frac{1}{1+e^{-z}}$ - Sigmoid 
+		\item $ReLU(z) = \max(0, z)$  - Rectified linear unit
+	\end{itemize}	
+\end{itemize}
+
+\begin{figure}[H]\centering\includegraphics[width=6cm]{sigmoid.png}\caption{Sigmoid function}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=6cm]{RELU.png}\caption{ReLU function}\end{figure}
+
+\newpage
+\subsubsection{Neural Network - Layering functions}
+
+\begin{itemize}
+	\item Dense: $y = \sigma(L), L = Ax+b$
+	\item Expressiveness 
+	\item Back propagation - $\frac{\partial y}{ \partial w} =  \frac{\partial y}{ \partial L} \cdot \frac{\partial L}{ \partial w}$
+\end{itemize}
+
+
+\subsubsection{Neural Network - Hyperbolic tangent  function}
+$\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
+\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent function}\end{figure}
+
+
+\subsubsection{Neural Network - Problems}
+
+
+\begin{itemize}
+	\item Fixed size input
+	\item No memory
+\end{itemize}
+
+
+\newpage
+\subsection{RNN}
+
+\subsubsection{RNN - Introduction}
+\begin{itemize}
+	\item Signals with timestamp (time series) - $\{x_t, y_t \}_{t=1}^k$
+	\item Hidden state - $h_t = f_{W}(x_t, h_{t-1})$
+	\item Same weights $W$ for each step
+	\item Popular in Natural Language Processing (NLP)
+\end{itemize}
+\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN.png}\caption{RNN}\end{figure}
+
+
+\subsubsection{RNN - Simple example}
+
+\begin{itemize}
+	\item $h_t = \sigma_h \big(W_{hh} h_{t-1} +  W_{xh} x_{t} + b_h\big)$
+	\item $y_t  = W_{hy} h_{t} +  b_y$
+\end{itemize}
+
+\subsubsection{RNN - Multi-Layer}
+\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN_MULTI.png}\caption{RNN - MultiLayer}\end{figure}
+\begin{align*}
+	h_t^{layer} = \sigma_h \bigg(W^{layer} \begin{pmatrix}
+		h_{t}^{layer-1} \\ h_{t-1}^{layer}
+	\end{pmatrix} \bigg)
+\end{align*}
+
+
+\subsubsection{RNN - Training }
+Back propagation through time:
+\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN_BACKPROP.png}\caption{RNN - back propagation}\end{figure}
+
+
+\subsubsection{RNN - Problems}
+
+Small example, scalars and no hidden states:
+\begin{figure}[H]\centering\includegraphics[width=10cm]{Explode.jpeg}\caption{RNN - Exploding vanishing gradients}\end{figure}
+
+\begin{itemize}
+	\item Exploding vanishing gradients
+	\item $x^{(n)} = W^t x^{(0)}$
+	\item 10 time steps.
+\end{itemize}
+
+\newpage
+\subsection{LSTM}
+
+
+\subsubsection{LSTM - Motivation}
+
+LSTM (Long Short Term Memory) is a special kind of RNN,  designed to overcome the limitation of RNN
+\begin{itemize}
+	\item Gradient vanishing and exploding
+	\item Complex training
+	\item Difficulty to processes long sequences 
+\end{itemize}
+
+Remembering information for long periods of time is intrinsic to LSTM.
+
+\subsubsection{LSTM - Principles}
+
+
+\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
+
+\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
+
+\begin{itemize}
+	\item Separate Cell state
+	\item Gate to control flow of information:
+	\begin{itemize}
+		\item \textbf{Forget} - Gets rids of irrelevant information.
+		\item \textbf{Store} - Relevant information from input
+		\item \textbf{Update} - Selectively update cell state
+		\item \textbf{Output}
+	\end{itemize}
+\end{itemize}
+
+
+\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_GRADIENT_FLOW.png}\caption{LSTM - Gradient flow}\end{figure}
+
+
+\subsubsection{LSTM- Formulation}
+\begin{align*}
+	f_t &= \sigma_g(W_{f} x_t + U_{f} h_{t-1} + b_f) \\
+	i_t &= \sigma_g(W_{i} x_t + U_{i} h_{t-1} + b_i) \\
+	o_t &= \sigma_g(W_{o} x_t + U_{o} h_{t-1} + b_o) \\
+	\tilde{c}_t &= \sigma_c(W_{c} x_t + U_{c} h_{t-1} + b_c) \\
+	c_t &= f_t \circ c_{t-1} + i_t \circ \tilde{c}_t \\
+	h_t &= o_t \circ \sigma_h(c_t)
+\end{align*}
+
+where the initial values are $c_0 = 0$ and $h_0 = 0$ and the operator $\circ$ denotes the Hadamard product (element-wise product). 
+
+\begin{itemize}
+	\item $x_t \in \mathbb{R}^{d}$: input vector to the LSTM unit 
+	\item $f_t \in \mathbb{R}^{h}$: forget gate's activation vector
+	\item $i_t \in \mathbb{R}^{h}$: input/update gate's activation vector 
+	\item $o_t \in \mathbb{R}^{h}$: output gate's activation vector
+	\item $h_t \in \mathbb{R}^{h}$: hidden state vector also known as output vector of the LSTM unit 
+	\item $\tilde{c}_t \in \mathbb{R}^{h}$: cell input activation vector
+	\item $c_t \in \mathbb{R}^{h}$: cell state vector
+	\item $W \in \mathbb{R}^{h \times d}, U \in \mathbb{R}^{h \times h} $ and $b \in \mathbb{R}^{h}$: weight matrices and bias vector parameters which need to be learned during training
+\end{itemize}
+
+where the superscripts $d$ and $h$ refer to the number of input features and number of hidden units, respectively.
+
+
+\subsubsection{LSTM- Multi-cell}
+
+\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_MULTI.png}\caption{LSTM - Multi layer cells}\end{figure}
+\subsubsection{LSTM - in context of rainfall}
+
+\begin{itemize}
+	\item 2018
+	\begin{itemize}
+		\item CAMELS - Data set
+		\item 2-Layer LSTM -cells
+		\item Input feature size $d=5$ - prcp(mm/day), srad(W/m2), tmax(C), tmin(C), vp(Pa). 
+		\item Hidden state  size $h=20$
+		\item Dropout rate = $10\%$
+		\item Sequemce length - $365$ days. 
+	\end{itemize} 
+	\item 2019
+	\begin{itemize}
+		\item CAMELS - Data set
+		\item 1-Layer LSTM 
+		\item Input feature size $d=5$ ? 
+		\item Hidden state  size $h=256$
+		\item Dropout rate = $40\%$
+		\item Sequence length - $270$ days. 
+	\end{itemize} 	
+\end{itemize}
+
+\newpage
+
+
+
+
+
+
+\chapter{Results} 
+ 
+\section{Sanity Check}
+
+\section{Dream synthetic model}
+
+\section{CelebA data set}
+
+\section{Caravan Data set}
+
+
+\chapter{Discussions} 
+
+\chapter{Conclusions} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+
+
+$S_{b_1} = \big\{X_i, Y_i\big\}_{i=1}^{i=n_1}\quad , X_i,Y_i \sim f(X,Y| b_1) $  \\ \\
+$S_{b_2} = \big\{X_i, Y_i\big\}_{i=1}^{i=n_2}\quad , X_i,Y_i \sim f(X,Y| b_2) $ \\
+
+$S_{b_1} \cup S_{b_2}$ \\
+
+$X$ \\ $Y$ \\ $ \big\{b_1, b_2\big\}$ \\ \\ 
+
+$\text{Trained Model} \mapsto \text{Interpetabilty attributes}$ \\
+$attributes_{\{S_{b_1} \cup S_{b_2}\}}$
+
+	
+\newpage
+
+\printbibliography
+
+
+
+\end{document}

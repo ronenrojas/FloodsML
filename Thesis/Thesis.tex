@@ -22,6 +22,8 @@
 \usepackage{MnSymbol,wasysym}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{braket}
 \graphicspath{ {images/} }
 \usepackage[style=alphabetic]{biblatex}
 \addbibresource{thesis.bib}
@@ -56,9 +58,9 @@
 
 In recent years machine learning models became the "go-to" solution for almost every task of estimation or prediction. It has Replaced the somewhat tedious task of trying to manually extract insights from the data.\\
 
-It is definitely easier in a sense to let the computer "learn" from the data whatever it needs, all you need is a strong GPU and good clean data, once you've got all your ducks in a row you're good to go. The performance of these kind of models is uncanny and unprecedented (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}).\\
+It is definitely easier in a sense to let the computer "learn" from the data whatever it needs, all you need is a strong GPU and good clean data, once you've got all your ducks in a row you're good to go. The performance of these kind of models is uncanny and unprecedented and outperform humans on specific tasks (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}, \cite{DBLP:journals/corr/MnihKSGAWR13}, \cite{Silver_2016}).\\
 
-But with great power comes great responsibility, how do we explain a model prediction in a sensible manner. Most models are considered to be \textit{"black boxes"} and humanly incomprehensible. Given a machine learning model we are now interested more on "why" and less on "what" and most of the time a simple accuracy metric is not enough. This fact gave rise to significant development in the field interpretability methods 
+But with great power comes great responsibility, how do we explain a model prediction in a sensible manner. Most models are considered to be \textit{"black boxes"} and humanly incomprehensible. Given a machine learning model we are now interested more on "why" and less on "what" and most of the time a simple accuracy metric is not enough . This fact gave rise to significant development in the field interpretability methods 
 \cite{molnar2019}. \\
 
 Interpretability tries to tackle this issue and tries to answer these lines of questions:
@@ -70,27 +72,72 @@ Interpretability tries to tackle this issue and tries to answer these lines of q
 
 Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach 
 \cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668},  while some do so
-from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Evaluation of interpretability methods is somewhat tricky in this sense , how does someone define a good explanation ? at the end some work better then others on different types of models and different types of data-set. This actually motivated use to refine and explore this notion.  
+from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Evaluation of interpretability methods is somewhat tricky in this sense , how does someone define a good explanation ? Clearly since there is no ground truth for that there is no right nor wrong, at the end of the day some methods are better then others on different types of models and different types of data-set. \\ 
+
+This is the main motivation this research,  refinement and exploration of the notion on how can on understand better our interpretability methods and their limitations, how can we evaluate then in a more concrete manner. Can we expand it to a more scientific domain e.g. Hydrology and use some human ground expertise to achieve that. 
 
 
 \newpage
 
 \chapter{Literature review} 
 
-In this chapter we'll review recent work for frameworks of evaluating interpretability methods and what data-sets were used. We're also going to review the interpretability method used in the current framework
+In this chapter we'll review recent work for frameworks of evaluating interpretability methods and what evaluation metrics were used. We're also going to review the interpretability method used in the current framework. We'll constrain the scope of this work only to model attribution-based explanations \cite{electronics10050593}, these kind of explanations are local and post-hoc i.e., given a trained model and an input for the prediction, attribution measures or ranks each input feature to explain the model's prediction. \\
+
+Formally, if we have a model that was trained to perform a specific task:
+\begin{align*}
+	y & = f_{\theta}(x) \\
+	x & \in \mathbb{R}^n, y \in \mathbb{R}
+\end{align*}
+
+An attribution method provides an explanation $e$ for the input $x^i$:
+\begin{align*}
+	e &= \text{attrib}(f_{\theta}, x^i) \\
+	x^i & \in \mathbb{R}^n, e \in \mathbb{R}^n
+\end{align*}
+
+$e$ gives an explanation power rank for each input coordinate (feature) for the prediction $y^i=f_{\theta}(x^i)$.
+
 
 \section{Interpretability methods frameworks and metrics}
 
-There has been a line of study to treat explains of interpretability methods a.k.a attributes as feature importance \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758}.  These works ask what will happen if we "remove" these features from the input strategically?  what will happen to model predictions now?, if we remove from most to least important we will probably see degradation this can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
+\subsection{Feature importance removal}
 
-By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" taking out the most important feature the model quicker in a sense this method is better and vice versa if we took the least important features.\\
+There has been a line of study to treat attribution-based explanations as feature importance \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758}.  This lone of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
+
+By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" the model quicker in a sense this method is better and vice versa if we were able to sustain accuracy or other performance metrics of a model when removing least important features from explanations ranks.\\
+
+Samec et al. \cite{https://doi.org/10.48550/arxiv.1509.06321} have devised an input perturbation process called \textit{most relevant first}, abbreviated MoRF for the trained model $f(x)$. In this process we remove information from the input by setting the coordinates (or a region of surrounding pixels e.g. $9 \times 9$ neighborhood) to a uniform distribution. MoRF process is done by the individual attribution ranking $e$ of a given input $x$, this is done for $L$ iterations:
+\begin{align*}
+	x_{\text{MoRF}}^{(0)} & = x  \\ 
+	\forall 1 \le k \le L \quad x_{\text{MoRF}}^{(k)} &= \text{Remove} (x_{\text{MoRF}}^{(k-1)}, e)	
+\end{align*}
+The metric used is the area over the MoRF perturbation curve (AOPC):
+\begin{align*}
+	\text{AOPC} = \Braket{	\sum_{k=0}^{L}f(x) -f(x_{\text{MoRF}}^{(k)})}_{p(x)}
+\end{align*}
+Where $\Braket{\cdot}_{p(x)}$ means we average over all inputs in the data set, a larger AOPC means a sharper decrease of the MoRF process ($f(x_{\text{MoRF}}^{(k)})$) thus a better feature importance for the attribution-based explanation. \\
+
+The opposite approach then is the perturbation process \textit{least relevant first}, abbreviated LeRF. The proposed metric is the area between th perturbations curves:
+\begin{align*}
+	\text{ABPC} = \Braket{	\sum_{k=0}^{L}f(x_{\text{LeRF}}^{(k)}) -f(x_{\text{MoRF}}^{(k)})}_{p(x)}
+\end{align*}
+In this case the LeRF process needs to sustain the information as much a possibles thus \textbf{larger} area is wanted.\\
+
+Hooker et al.  \cite{https://doi.org/10.48550/arxiv.1806.10758} opine that any removal of information from the input is disruptive since the metrics will be used on modified input that is not from the data set original distribution, thus the generalization errors of "out of sample" inputs for the model becomes dominant. \\
+
+To mitigate this case they presented a training strategy, RemOve and Retrain (ROAR). This ensures that the metric used, which in the case was a simple test-set accuracy, is used in sample from the distrubution the model was trained on. The opposite approach was to Keep And Retrain (KAR). In this approach, \textbf{minimizing} degradation to test-set accuracy is desirable
 
 
-\textcolor{red}{Paragraph about the methods ROAR , KAR, MORF, LEVF} \\
 
 
-\textcolor{red}{Paragraph about the metrics AOPC, SSIM} \\
 
+
+\textcolor{red}{Paragraph about the methods ROAR , KAR} \\
+
+
+\textcolor{red}{Paragraph about the metrics, SSIM} \\
+
+\subsection{Interpretability as a debug tool}
 Another line of study is let interpretability method be a debug tool for the model itself \cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}. This line of work studies how sensitive an interpretability method is to contamination of the learning process of a model. If an interpretability method is sensitive to a model that trained or tested in an ill manner compered to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself.  \\
 
 \textcolor{red}{Paragraph about the modes were the model was disrupted} \\

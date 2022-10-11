@@ -24,7 +24,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{braket}
-\graphicspath{ {images/} }
+\graphicspath{ {images/}}
 \usepackage[style=alphabetic]{biblatex}
 \addbibresource{thesis.bib}
 
@@ -89,22 +89,22 @@ Formally, if we have a model that was trained to perform a specific task:
 	x & \in \mathbb{R}^n, y \in \mathbb{R}
 \end{align*}
 
-An attribution method provides an explanation $e$ for the input $x^i$:
+An attribution method provides an explanation $e$ for the input $x$:
 \begin{align*}
-	e &= \text{attrib}(f_{\theta}, x^i) \\
-	x^i & \in \mathbb{R}^n, e \in \mathbb{R}^n
+	e &= \text{attrib}(f_{\theta}, x) \\
+	x & \in \mathbb{R}^n, e \in \mathbb{R}^n
 \end{align*}
 
-$e$ gives an explanation power rank for each input coordinate (feature) for the prediction $y^i=f_{\theta}(x^i)$.
+$e$ gives an explanation power rank for each input coordinate (feature) for the prediction $y=f_{\theta}(x)$.
 
 
 \section{Interpretability methods frameworks and metrics}
 
 \subsection{Feature importance removal}
 
-There has been a line of study to treat attribution-based explanations as feature importance \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758}.  This lone of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
+There has been a line of study to treat attribution-based explanations as feature importance \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758} \cite{DBLP:journals/corr/MontavonSM17}.  This line of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
 
-By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" the model quicker in a sense this method is better and vice versa if we were able to sustain accuracy or other performance metrics of a model when removing least important features from explanations ranks.\\
+By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" the model quicker in a sense this method is better and vice versa if we were able to sustain accuracy or other performance metrics of a model when removing least important features from explanations ranks. Motavon et al. \cite{DBLP:journals/corr/MontavonSM17} coined this desired property as \textit{Explanation Selectivity}.\\
 
 Samec et al. \cite{https://doi.org/10.48550/arxiv.1509.06321} have devised an input perturbation process called \textit{most relevant first}, abbreviated MoRF for the trained model $f(x)$. In this process we remove information from the input by setting the coordinates (or a region of surrounding pixels e.g. $9 \times 9$ neighborhood) to a uniform distribution. MoRF process is done by the individual attribution ranking $e$ of a given input $x$, this is done for $L$ iterations:
 \begin{align*}
@@ -123,61 +123,74 @@ The opposite approach then is the perturbation process \textit{least relevant fi
 \end{align*}
 In this case the LeRF process needs to sustain the information as much a possibles thus \textbf{larger} area is wanted.\\
 
+In \cite{LRP} to evaluate the layer-wise relevance propagation (LRP) interpretability method "pixel-flipping" was used.  Arras et el. \cite{DBLP:journals/corr/ArrasHMMS16a} also used LRP evaluation and simply "deleted" word for their model into by setting the corresponding word embedding to zero in order. \\
+
 Hooker et al.  \cite{https://doi.org/10.48550/arxiv.1806.10758} opine that any removal of information from the input is disruptive since the metrics will be used on modified input that is not from the data set original distribution, thus the generalization errors of "out of sample" inputs for the model becomes dominant. \\
 
-To mitigate this case they presented a training strategy, RemOve and Retrain (ROAR). This ensures that the metric used, which in the case was a simple test-set accuracy, is used in sample from the distrubution the model was trained on. The opposite approach was to Keep And Retrain (KAR). In this approach, \textbf{minimizing} degradation to test-set accuracy is desirable
+To mitigate this case they presented a training strategy, RemOve and Retrain (ROAR). This ensures that the metric used, which in the case was a simple test-set accuracy, is used in sample from the distrubution the model was trained on. The opposite approach was to Keep And Retrain (KAR). In this approach, \textbf{minimizing} degradation to test-set accuracy is desirable\\
 
-
-
-
-
-
-\textcolor{red}{Paragraph about the methods ROAR , KAR} \\
-
-
-\textcolor{red}{Paragraph about the metrics, SSIM} \\
 
 \subsection{Interpretability as a debug tool}
-Another line of study is let interpretability method be a debug tool for the model itself \cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}. This line of work studies how sensitive an interpretability method is to contamination of the learning process of a model. If an interpretability method is sensitive to a model that trained or tested in an ill manner compered to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself.  \\
 
-\textcolor{red}{Paragraph about the modes were the model was disrupted} \\
+Another line of study is to let the interpretability method to be a debug tool for the model or training process itself \cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}. If an interpretability method is sensitive to a model that trained or tested in an ill manner compared to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself. \\
 
-\textcolor{red}{Paragraph about the metrics used} \\
+Adebayo et al. \cite{https://doi.org/10.48550/arxiv.1810.03292} proposed 2 test frameworks: 
+\begin{enumerate}
+	\item \textit{Model parameter randomization test}: Apply attributions-based method on a trained model and on the same architecture but on a randomly initialized untrained model.
+	\item \textit{Data randomization test}: Apply attributions-based method on a trained model and on a copy of the mode trained on a copy of the data set in which all labels were randomly permuted.
+\end{enumerate}
+
+\textit{Model parameter randomization} tests whether attributions method outputs differ substantially between the 2 models, if the output are similar it means the method is insensitive to model parameters which in a sense does not bode well to the explanation goals which are to understand why did the model made its prediction. It's important to note that the randomization of the model parameters was done in a cascading fashion from top to bottom layers. \\
+
+\textit{Data randomization} tests again as before the difference between the 2 models, An insensitivity to the permuted labels reveals that the method does not depend on the relationship between input and labels which is not a desired property for an attribution-based method. \\
+
+\cite{https://doi.org/10.48550/arxiv.1810.03292} used visualization to show the the differences in the attributes, but also used more rigorous ways namely \textit{similarity metrics} as follows:
+\begin{enumerate}
+	\item Spearman rank correlation with / without  absolute value.
+	\item Structural similarity index measure (SSIM \cite{1284395}).
+	\item Pearson correlation of the histogram of gradients (HOGs)
+\end{enumerate}
 
 
+\textcolor{red}{Paragraph about Data contamination and test bugs} \cite{DBLP:journals/corr/abs-2011-05429}
 
+\subsection{A more theoretical and axiomatic approach}
 
+\textcolor{red}{Paragraph about Axioms in IG} \cite{DBLP:journals/corr/SundararajanTY17}\\
 
+\textcolor{red}{Paragraph about Monotonicity } \cite{DBLP:journals/corr/abs-2007-07584} \\
+
+\textcolor{red}{Paragraph about Sensitivity-n} \cite{https://doi.org/10.48550/arxiv.1711.06104} \\
+
+\textcolor{red}{Paragraph about Explanation Continuity} \cite{DBLP:journals/corr/MontavonSM17}
 \newpage
 \section{Interpretability methods}
 
-
-
-
-
-
-
+For the this section we'll assume we have a model $f$
 
 \subsection{Grad }
-	\textcolor{red}{short paragraph about method} \cite{baehrens2010explain}, \cite{https://doi.org/10.48550/arxiv.1312.6034}
+	The most straight forward interpretability method \cite{baehrens2010explain} \cite{https://doi.org/10.48550/arxiv.1312.6034}, also know as saliency map 
+
+\subsection{Integrated Gradients}
+
+\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SundararajanTY17}
+
+\subsection{Local Integrated Gradients}
+\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1711.06104}
+
 
 \subsection{Smooth Grad}
 
-	\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SmilkovTKVW17}
+\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SmilkovTKVW17}
 
 \subsection{VarGrad}
 
-	\textcolor{red}{Paragraph about method} \ \cite{DBLP:journals/corr/abs-1810-03307}
+\textcolor{red}{Paragraph about method} \ \cite{DBLP:journals/corr/abs-1810-03307}
+
 
 \subsection{Smooth Grad Square SG-SQ}
 		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1806.10758}
 
-\subsection{Integrated Gradients}
-
-		\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SundararajanTY17}
-
-\subsection{Local Integrated Gradients}
-		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1711.06104}
 
 \subsection{Shapely Value Sampling}
 		\textcolor{red}{Paragraph about method} \cite{CASTRO20091726}, \cite{trumbelj2010AnEE}
@@ -204,16 +217,20 @@ effectively evaluate and validate any given interpretability method.
 \chapter{Research objective } 
 
 We offer a framework for evaluating an interpretability method. Our approach can be summarized in
-the following scheme [Figure1]:
-1. Generate a 2-modal data-set.
-2. Train a machine learning model on the data set.
-3. Train two classifiers for the modalities of the data set:
-a. A clean view – training only with the data set.
-b. An interpreted view – training only with attributes of the trained model.
-4. Evaluate interpretability method by comparison of the clean classifier to interpreted classifier
-with simple classification metrics
-
-\chapter{Methods} 
+the following scheme:
+\begin{enumerate}
+	\item Generate a 2-modal data-set
+	\item Train a machine learning model on the data-set
+	\item`Train two classifiers for the modalities of the data-set:
+	\begin{enumerate}
+		\item A clean view – training only with the data-set
+		\item An interpreted view – training only with attributes of the trained model 	
+    \end{enumerate}
+	\item Evaluate interpretability method by comparison of the clean classifier to interpreted classifier
+	with simple classification metrics		
+\end{enumerate}
+\begin{figure}[H]\centering\includegraphics[width=17cm]{scheme.png}\caption{Scheme}\end{figure}
+\chapter{Data and Models} 
 \section{Data}
 \subsection{DREAM}
 \subsection{CARAVAN}

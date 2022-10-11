@@ -5,46 +5,47 @@
 \contentsline {section}{\numberline {3.1}Interpretability methods frameworks and metrics}{7}{section.3.1}%
 \contentsline {subsection}{\numberline {3.1.1}Feature importance removal}{7}{subsection.3.1.1}%
 \contentsline {subsection}{\numberline {3.1.2}Interpretability as a debug tool}{8}{subsection.3.1.2}%
-\contentsline {section}{\numberline {3.2}Interpretability methods}{9}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Grad }{9}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Smooth Grad}{9}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}VarGrad}{9}{subsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.2.4}Smooth Grad Square SG-SQ}{9}{subsection.3.2.4}%
-\contentsline {subsection}{\numberline {3.2.5}Integrated Gradients}{9}{subsection.3.2.5}%
-\contentsline {subsection}{\numberline {3.2.6}Local Integrated Gradients}{9}{subsection.3.2.6}%
-\contentsline {subsection}{\numberline {3.2.7}Shapely Value Sampling}{9}{subsection.3.2.7}%
-\contentsline {subsection}{\numberline {3.2.8}Deep Lift SHAP}{9}{subsection.3.2.8}%
-\contentsline {subsection}{\numberline {3.2.9}local Deep lift SHAP}{9}{subsection.3.2.9}%
-\contentsline {subsection}{\numberline {3.2.10}Feature Ablation}{10}{subsection.3.2.10}%
-\contentsline {section}{\numberline {3.3}Recognized gap}{11}{section.3.3}%
-\contentsline {chapter}{\numberline {4}Research objective }{12}{chapter.4}%
-\contentsline {chapter}{\numberline {5}Methods}{13}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Data}{13}{section.5.1}%
-\contentsline {subsection}{\numberline {5.1.1}DREAM}{13}{subsection.5.1.1}%
-\contentsline {subsection}{\numberline {5.1.2}CARAVAN}{13}{subsection.5.1.2}%
-\contentsline {section}{\numberline {5.2}Models}{13}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Feed Forward Neural Network}{13}{subsection.5.2.1}%
-\contentsline {subsubsection}{Neural Network - Introduction}{13}{subsubsection*.2}%
-\contentsline {subsubsection}{Neural Network - Function definitions}{15}{subsubsection*.3}%
-\contentsline {subsubsection}{Neural Network - Layering functions}{16}{subsubsection*.4}%
-\contentsline {subsubsection}{Neural Network - Hyperbolic tangent function}{16}{subsubsection*.5}%
-\contentsline {subsubsection}{Neural Network - Problems}{16}{subsubsection*.6}%
-\contentsline {subsection}{\numberline {5.2.2}RNN}{17}{subsection.5.2.2}%
-\contentsline {subsubsection}{RNN - Introduction}{17}{subsubsection*.7}%
-\contentsline {subsubsection}{RNN - Simple example}{17}{subsubsection*.8}%
-\contentsline {subsubsection}{RNN - Multi-Layer}{18}{subsubsection*.9}%
-\contentsline {subsubsection}{RNN - Training }{18}{subsubsection*.10}%
-\contentsline {subsubsection}{RNN - Problems}{19}{subsubsection*.11}%
-\contentsline {subsection}{\numberline {5.2.3}LSTM}{20}{subsection.5.2.3}%
-\contentsline {subsubsection}{LSTM - Motivation}{20}{subsubsection*.12}%
-\contentsline {subsubsection}{LSTM - Principles}{20}{subsubsection*.13}%
-\contentsline {subsubsection}{LSTM- Formulation}{22}{subsubsection*.14}%
-\contentsline {subsubsection}{LSTM- Multi-cell}{23}{subsubsection*.15}%
-\contentsline {subsubsection}{LSTM - in context of rainfall}{23}{subsubsection*.16}%
-\contentsline {chapter}{\numberline {6}Results}{24}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Sanity Check}{24}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Dream synthetic model}{24}{section.6.2}%
-\contentsline {section}{\numberline {6.3}CelebA data set}{24}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Caravan Data set}{24}{section.6.4}%
-\contentsline {chapter}{\numberline {7}Discussions}{25}{chapter.7}%
-\contentsline {chapter}{\numberline {8}Conclusions}{26}{chapter.8}%
+\contentsline {subsection}{\numberline {3.1.3}A more theoretical and axiomatic approach}{9}{subsection.3.1.3}%
+\contentsline {section}{\numberline {3.2}Interpretability methods}{11}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Grad }{11}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Integrated Gradients}{11}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Local Integrated Gradients}{11}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Smooth Grad}{11}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}VarGrad}{11}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {3.2.6}Smooth Grad Square SG-SQ}{11}{subsection.3.2.6}%
+\contentsline {subsection}{\numberline {3.2.7}Shapely Value Sampling}{11}{subsection.3.2.7}%
+\contentsline {subsection}{\numberline {3.2.8}Deep Lift SHAP}{11}{subsection.3.2.8}%
+\contentsline {subsection}{\numberline {3.2.9}local Deep lift SHAP}{12}{subsection.3.2.9}%
+\contentsline {subsection}{\numberline {3.2.10}Feature Ablation}{12}{subsection.3.2.10}%
+\contentsline {section}{\numberline {3.3}Recognized gap}{13}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Research objective }{14}{chapter.4}%
+\contentsline {chapter}{\numberline {5}Data and Models}{16}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Data}{16}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}DREAM}{16}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}CARAVAN}{16}{subsection.5.1.2}%
+\contentsline {section}{\numberline {5.2}Models}{16}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Feed Forward Neural Network}{16}{subsection.5.2.1}%
+\contentsline {subsubsection}{Neural Network - Introduction}{16}{subsubsection*.2}%
+\contentsline {subsubsection}{Neural Network - Function definitions}{18}{subsubsection*.3}%
+\contentsline {subsubsection}{Neural Network - Layering functions}{19}{subsubsection*.4}%
+\contentsline {subsubsection}{Neural Network - Hyperbolic tangent function}{19}{subsubsection*.5}%
+\contentsline {subsubsection}{Neural Network - Problems}{19}{subsubsection*.6}%
+\contentsline {subsection}{\numberline {5.2.2}RNN}{20}{subsection.5.2.2}%
+\contentsline {subsubsection}{RNN - Introduction}{20}{subsubsection*.7}%
+\contentsline {subsubsection}{RNN - Simple example}{20}{subsubsection*.8}%
+\contentsline {subsubsection}{RNN - Multi-Layer}{21}{subsubsection*.9}%
+\contentsline {subsubsection}{RNN - Training }{21}{subsubsection*.10}%
+\contentsline {subsubsection}{RNN - Problems}{22}{subsubsection*.11}%
+\contentsline {subsection}{\numberline {5.2.3}LSTM}{23}{subsection.5.2.3}%
+\contentsline {subsubsection}{LSTM - Motivation}{23}{subsubsection*.12}%
+\contentsline {subsubsection}{LSTM - Principles}{23}{subsubsection*.13}%
+\contentsline {subsubsection}{LSTM- Formulation}{25}{subsubsection*.14}%
+\contentsline {subsubsection}{LSTM- Multi-cell}{26}{subsubsection*.15}%
+\contentsline {subsubsection}{LSTM - in context of rainfall}{26}{subsubsection*.16}%
+\contentsline {chapter}{\numberline {6}Results}{27}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Sanity Check}{27}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Dream synthetic model}{27}{section.6.2}%
+\contentsline {section}{\numberline {6.3}CelebA data set}{27}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Caravan Data set}{27}{section.6.4}%
+\contentsline {chapter}{\numberline {7}Discussions}{28}{chapter.7}%
+\contentsline {chapter}{\numberline {8}Conclusions}{29}{chapter.8}%

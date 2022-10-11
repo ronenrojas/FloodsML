@@ -122,7 +122,7 @@
 	bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 
-% Local attributions Vs. Global
+% Local attributions Vs. Global and Sensitivity-n metric
 @misc{https://doi.org/10.48550/arxiv.1711.06104,
 	doi = {10.48550/ARXIV.1711.06104},
 	url = {https://arxiv.org/abs/1711.06104},
@@ -227,17 +227,55 @@
 	copyright = {arXiv.org perpetual, non-exclusive license}
 }
 
-@misc{https://doi.org/10.48550/arxiv.1806.10758,
-	doi = {10.48550/ARXIV.1806.10758},
-	url = {https://arxiv.org/abs/1806.10758},
-	author = {Hooker, Sara and Erhan, Dumitru and Kindermans, Pieter-Jan and Kim, Been},
-	keywords = {Machine Learning (cs.LG), Artificial Intelligence (cs.AI), Machine Learning (stat.ML), FOS: Computer and information sciences, FOS: Computer and information sciences},
-	title = {A Benchmark for Interpretability Methods in Deep Neural Networks},
-	publisher = {arXiv},
-	year = {2018},
-	copyright = {arXiv.org perpetual, non-exclusive license}
+% referenceExplanation Selectivity
+@article{DBLP:journals/corr/MontavonSM17,
+	author    = {Grégoire Montavon and
+	Wojciech Samek and
+	Klaus-Robert Müller},
+	title     = {Methods for Interpreting and Understanding Deep Neural Networks},
+	journal   = {CoRR},
+	volume    = {abs/1706.07979},
+	year      = {2017},
+	url       = {http://arxiv.org/abs/1706.07979},
+	eprinttype = {arXiv},
+	eprint    = {1706.07979},
+	timestamp = {Mon, 13 Aug 2018 16:48:40 +0200},
+	biburl    = {https://dblp.org/rec/journals/corr/MontavonSM17.bib},
+	bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+% LRP Method 
+
+@article{LRP,
+	author = {Lapuschkin, Sebastian and Binder, Alexander and Montavon, Grégoire and Klauschen, Frederick and Müller, Klaus-Robert and Samek, Wojciech},
+	year = {2015},
+	month = {07},
+	pages = {e0130140},
+	title = {On Pixel-Wise Explanations for Non-Linear Classifier Decisions by Layer-Wise Relevance Propagation},
+	volume = {10},
+	journal = {PLoS ONE},
+	doi = {10.1371/journal.pone.0130140}
 }
 
+% LRP word emmbeding zero
+@article{DBLP:journals/corr/ArrasHMMS16a,
+	author    = {Leila Arras and
+	Franziska Horn and
+	Grégoire  Montavon and
+	Klaus-Robert Müller and
+	Wojciech Samek},
+	title     = {"What is Relevant in a Text Document?": An Interpretable Machine Learning
+	Approach},
+	journal   = {CoRR},
+	volume    = {abs/1612.07843},
+	year      = {2016},
+	url       = {http://arxiv.org/abs/1612.07843},
+	eprinttype = {arXiv},
+	eprint    = {1612.07843},
+	timestamp = {Mon, 13 Aug 2018 16:47:50 +0200},
+	biburl    = {https://dblp.org/rec/journals/corr/ArrasHMMS16a.bib},
+	bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+% Debugging reference 1
 @misc{https://doi.org/10.48550/arxiv.1810.03292,
 	doi = {10.48550/ARXIV.1810.03292},
 	url = {https://arxiv.org/abs/1810.03292},
@@ -248,6 +286,8 @@
 	year = {2018},
 	copyright = {arXiv.org perpetual, non-exclusive license}
 }
+
+% Debugging reference 2
 
 @article{DBLP:journals/corr/abs-2011-05429,
 	author    = {Julius Adebayo and
@@ -368,3 +408,30 @@
 	ABSTRACT = {The most successful Machine Learning (ML) systems remain complex black boxes to end-users, and even experts are often unable to understand the rationale behind their decisions. The lack of transparency of such systems can have severe consequences or poor uses of limited valuable resources in medical diagnosis, financial decision-making, and in other high-stake domains. Therefore, the issue of ML explanation has experienced a surge in interest from the research community to application domains. While numerous explanation methods have been explored, there is a need for evaluations to quantify the quality of explanation methods to determine whether and to what extent the offered explainability achieves the defined objective, and compare available explanation methods and suggest the best explanation from the comparison for a specific task. This survey paper presents a comprehensive overview of methods proposed in the current literature for the evaluation of ML explanations. We identify properties of explainability from the review of definitions of explainability. The identified properties of explainability are used as objectives that evaluation metrics should achieve. The survey found that the quantitative metrics for both model-based and example-based explanations are primarily used to evaluate the parsimony/simplicity of interpretability, while the quantitative metrics for attribution-based explanations are primarily used to evaluate the soundness of fidelity of explainability. The survey also demonstrated that subjective measures, such as trust and confidence, have been embraced as the focal point for the human-centered evaluation of explainable systems. The paper concludes that the evaluation of ML explanations is a multidisciplinary research topic. It is also not possible to define an implementation of evaluation metrics, which can be applied to all explanation methods.},
 	DOI = {10.3390/electronics10050593}
 }
+
+% Axiomatic approach 
+
+@article{DBLP:journals/corr/abs-2007-07584,
+	author    = {An-phi Nguyen and María Rodríguez Martínez},
+	title     = {On quantitative aspects of model interpretability},
+	journal   = {CoRR},
+	volume    = {abs/2007.07584},
+	year      = {2020},
+	url       = {https://arxiv.org/abs/2007.07584},
+	eprinttype = {arXiv},
+	eprint    = {2007.07584},
+	timestamp = {Sun, 02 Oct 2022 15:32:02 +0200},
+	biburl    = {https://dblp.org/rec/journals/corr/abs-2007-07584.bib},
+	bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+% SSIM refrence
+@article{1284395,
+	author={Zhou Wang and Bovik, A.C. and Sheikh, H.R. and Simoncelli, E.P.},
+	journal={IEEE Transactions on Image Processing}, 
+	title={Image quality assessment: from error visibility to structural similarity}, 
+	year={2004},
+	volume={13},
+	number={4},
+	pages={600-612},
+	doi={10.1109/TIP.2003.819861}}

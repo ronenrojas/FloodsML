@@ -25,7 +25,7 @@
 \usepackage{amsmath}
 \usepackage{braket}
 \graphicspath{ {images/}}
-\usepackage[style=alphabetic]{biblatex}
+\usepackage[style=numeric]{biblatex}
 \addbibresource{thesis.bib}
 
 
@@ -38,7 +38,7 @@
 	{\large Hebrew University}
 }
 \author{Ronen Rojas}
-\date{August 2022}
+\date{October 2022}
 
 
 \begin{document}
@@ -71,7 +71,7 @@ Interpretability tries to tackle this issue and tries to answer these lines of q
 \end{itemize}
 
 Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach 
-\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668},  while some do so
+(\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}),  while some do so
 from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Evaluation of interpretability methods is somewhat tricky in this sense , how does someone define a good explanation ? Clearly since there is no ground truth for that there is no right nor wrong, at the end of the day some methods are better then others on different types of models and different types of data-set. \\ 
 
 This is the main motivation this research,  refinement and exploration of the notion on how can on understand better our interpretability methods and their limitations, how can we evaluate then in a more concrete manner. Can we expand it to a more scientific domain e.g. Hydrology and use some human ground expertise to achieve that. 
@@ -100,9 +100,9 @@ $e$ gives an explanation power rank for each input coordinate (feature) for the 
 
 \section{Interpretability methods frameworks and metrics}
 
-\subsection{Feature importance removal}
+\subsection{Feature importance removal framework}
 
-There has been a line of study to treat attribution-based explanations as feature importance \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758} \cite{DBLP:journals/corr/MontavonSM17}.  This line of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
+There has been a line of study to treat attribution-based explanations as feature importance (\cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758} \cite{DBLP:journals/corr/MontavonSM17}).  This line of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
 
 By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" the model quicker in a sense this method is better and vice versa if we were able to sustain accuracy or other performance metrics of a model when removing least important features from explanations ranks. Motavon et al. \cite{DBLP:journals/corr/MontavonSM17} coined this desired property as \textit{Explanation Selectivity}.\\
 
@@ -130,9 +130,9 @@ Hooker et al.  \cite{https://doi.org/10.48550/arxiv.1806.10758} opine that any r
 To mitigate this case they presented a training strategy, RemOve and Retrain (ROAR). This ensures that the metric used, which in the case was a simple test-set accuracy, is used in sample from the distrubution the model was trained on. The opposite approach was to Keep And Retrain (KAR). In this approach, \textbf{minimizing} degradation to test-set accuracy is desirable\\
 
 
-\subsection{Interpretability as a debug tool}
+\subsection{Interpretability as a debug tool framework}
 
-Another line of study is to let the interpretability method to be a debug tool for the model or training process itself \cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}. If an interpretability method is sensitive to a model that trained or tested in an ill manner compared to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself. \\
+Another line of study is to let the interpretability method to be a debug tool for the model or training process itself (\cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}). If an interpretability method is sensitive to a model that trained or tested in an ill manner compared to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself. \\
 
 Adebayo et al. \cite{https://doi.org/10.48550/arxiv.1810.03292} proposed 2 test frameworks: 
 \begin{enumerate}
@@ -151,56 +151,116 @@ Adebayo et al. \cite{https://doi.org/10.48550/arxiv.1810.03292} proposed 2 test 
 	\item Pearson correlation of the histogram of gradients (HOGs)
 \end{enumerate}
 
+In his later work Abedeyo et al. \cite{DBLP:journals/corr/abs-2011-05429} used a more elaborate scheme for tampering with the data-set, the training or evaluation process itself, simply named "bugs":
+\begin{enumerate}
+	\item \textit{Data contamination bugs} 
+	\begin{enumerate}
+		\item \textit{Labeling errors} - Incorrectly labeled data , Similar to previous work.
+		\item \textit{Spurious Correlation} - Make the model associate uncorrelated reason to the task, e.g. blue sky backgrounds with the bird class. 
+	\end{enumerate}
+	\item \textit{Model contamination bugs} - re-initialization of model weights, similar to previous work.
+	\item \textit{Test-time contamination bugs} - Out of distribution (OOD) samples, domain shift for the data-set. 
+\end{enumerate}
 
-\textcolor{red}{Paragraph about Data contamination and test bugs} \cite{DBLP:journals/corr/abs-2011-05429}
+\textit{Spurious bug implementation} was implemented by placing all birds onto one of the sky backgrounds and all dogs onto a bamboo forest background. Logically, explanations on a model that was trained on a data-set like this would identify this correlation i.e. attributing most of the background pixels to the class prediction. In a sense this is a ground truth for the explanation output itself and a "debug" tool for the attribution method.\\
 
-\subsection{A more theoretical and axiomatic approach}
+\textit{Test-time contamination bugs} assess the ability of attributions to diagnose domain shift, e.g. the attribution for an MNIST input from a model trained on MNIST, to an attribution for the same input but derived from an output of a model trained on a different data-set. 
 
-\textcolor{red}{Paragraph about Axioms in IG} \cite{DBLP:journals/corr/SundararajanTY17}\\
+\subsection{Axiomatic approach framework}
+
+In this section we'll present the approach of desired properties which attribution-based interpretability ought to have. These properties are mostly common sense and stem from a more theoretical thought process when devising a scheme for an attribution method hence we call them \textit{axioms} in this context. \\ 
+
+Although these \textit{axioms} are not comparable between methods per se they're still worth to mentioned as it can a used as a rigorous framework to evaluate these methods and some can become more quantifiable in a sense as we'll explain later in this section. \\
+
+Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} introduced these axioms in his novel attributed-based method \textit{integrated gradients}:
+\begin{enumerate}
+	\item \textit{Sensitivity} -  If the function implemented by the deep network does not depend (mathematically) on some variable, then the attribution to that variable is always zero.
+	\item \textit{Implementation invariance} - Attributions should be identical for two functionally equivalent networks.
+	\item \textit{Linearity} - Attributions method should preserve any linearity within the network.
+	\item \textit{Symmetry preserving} - If 2 inputs to the network are symmetrical $F(x,y)=F(y,x)$, so should be their corresponding attributions. 
+\end{enumerate}
+
+Montavon et al \cite{DBLP:journals/corr/MontavonSM17} introduced the desired property of \textit{continuity} as follows:
+\begin{itemize}
+	\item \textit{Continuity} - If two data points are nearly equivalent, then the explanations of their predictions should also be	nearly equivalent.
+\end{itemize}
+
+This axiom can be also quantified as follows, denote an attribution method $E$, two inputs $x,x'$ and their explanations respectively $E,E'$ :
+ \begin{align*}
+	\underset{x \ne x'}{\text{max}} \frac{\| E-E'\|_1}{\| x-x'\|_2}
+ \end{align*}
+
 
 \textcolor{red}{Paragraph about Monotonicity } \cite{DBLP:journals/corr/abs-2007-07584} \\
 
 \textcolor{red}{Paragraph about Sensitivity-n} \cite{https://doi.org/10.48550/arxiv.1711.06104} \\
 
-\textcolor{red}{Paragraph about Explanation Continuity} \cite{DBLP:journals/corr/MontavonSM17}
+
+
 \newpage
 \section{Interpretability methods}
 
-For the this section we'll assume we have a model $f$
+For this section we'll assume we have a model $y=f(x)$ and an attribution-based interpretability  method that outputs an explanation $E$ for the prediction $y$ with the same dimensions as the input $x$.
 
 \subsection{Grad }
-	The most straight forward interpretability method \cite{baehrens2010explain} \cite{https://doi.org/10.48550/arxiv.1312.6034}, also know as saliency map 
+	The most straight forward interpretability method \cite{baehrens2010explain} \cite{https://doi.org/10.48550/arxiv.1312.6034}, also known as saliency map:
+\begin{align*}
+	E_\text{GRAD}(f, x)  = \nabla_{x}f(x)
+\end{align*}
 
 \subsection{Integrated Gradients}
+Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} proposed this interpretability method, abbreviated IG, denote the coordinate $i$ as of input $x$ as $x_i$: 
+\begin{align*}
+	[E_\text{IG}(f, x)]_i  = (x_i - \overline{x}_i) \times \int_{\alpha=0}^{\alpha=0}\frac{\partial f(x+ \alpha(\overline{x}-x ))}{\partial x_i} d \alpha
+\end{align*}
 
-\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SundararajanTY17}
+where $\overline{x}$ is the baseline input for the method, usually something neutral in the data-set e.g. the black image in images data-sets.
 
 \subsection{Local Integrated Gradients}
-\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1711.06104}
+Ancona et al. \cite{https://doi.org/10.48550/arxiv.1711.06104} suggested a variant of any method that has an multiplication term by the input. If the aforementioned term is omitted then it's call local method whereas the original is called global, in case of the IG method we'll get:
+\begin{align*}
+	[E_\text{local-IG}(f, x)]_i  = \int_{\alpha=0}^{\alpha=0}\frac{\partial f(x+ \alpha(\overline{x}-x ))}{\partial x_i} d \alpha
+\end{align*}
 
+According to \cite{https://doi.org/10.48550/arxiv.1711.06104} \textit{global attribution methods} describe  marginal effect of a feature on the output
+with respect to a baseline, whereas  \textit{local attribution methods} describes changes for infinitesimally small perturbations around the original input.\\
 
 \subsection{Smooth Grad}
 
-\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/SmilkovTKVW17}
+Smilkov et al. \cite{DBLP:journals/corr/SmilkovTKVW17} proposed a adding some noise to the attribution process that will help smooth the saliency maps :
+\begin{align*}
+	E_\text{SGRAD}(f, x)  = \frac{1}{N}\sum_{i=1}^{N}\nabla_{x}f(x+g_i)
+\end{align*}
+
+Where $g_i$ are noise vectors $g_i \sim \mathcal{N}(0, \sigma^2) $ are drawn i.i.d. from a normal distribution. One can generalize this method, given an attribution method $E(f, x)$ its smooth counterpart is:
+\begin{align*}
+	E_\text{Smooth}(f, x)  = \frac{1}{N}\sum_{i=1}^{N}E(f, x + g_i)
+\end{align*}
+
 
 \subsection{VarGrad}
-
-\textcolor{red}{Paragraph about method} \ \cite{DBLP:journals/corr/abs-1810-03307}
+Adebayo et al. \cite{DBLP:journals/corr/abs-1810-03307} suggests using the variance operator similarly to the SGRAD. obviously this method can be generalized to any attribution method, denote the variance operator $\mathcal{V}$:
+\begin{align*}
+	E_\text{Variance}(f, x)  = \mathcal{V} \big[E(f, x + g_i)\big]
+\end{align*}
 
 
 \subsection{Smooth Grad Square SG-SQ}
-		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1806.10758}
+Hooker et al. \cite{https://doi.org/10.48550/arxiv.1806.10758} proposed the method element-wise square of SGrad 
+\begin{align*}
+	E_\text{SG-SQ}(f, x)  = E_\text{SGRAD}(f, x) \odot E_\text{SGRAD}(f, x)
+\end{align*}
 
+Where $\odot$ is the element-wise product.
 
 \subsection{Shapely Value Sampling}
-		\textcolor{red}{Paragraph about method} \cite{CASTRO20091726}, \cite{trumbelj2010AnEE}
+		\textcolor{red}{Paragraph about method} \cite{CASTRO20091726}, \cite{trumbelj2010AnEE} \cite{Shapley+2016+307+318}
 
 \subsection{Deep Lift SHAP}
 		\textcolor{red}{Paragraph about method} \cite{DBLP:journals/corr/LundbergL17}
 
 
 \subsection{local Deep lift SHAP}
-
 		\textcolor{red}{Paragraph about method} \cite{https://doi.org/10.48550/arxiv.1711.06104}
 
 \subsection{Feature Ablation}

@@ -1,4 +1,5 @@
 \documentclass[12pt]{report}
+\setcounter{secnumdepth}{5}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath,amsfonts,amssymb}
 \usepackage{mathtools}
@@ -71,10 +72,10 @@ Interpretability tries to tackle this issue and tries to answer these lines of q
 \end{itemize}
 
 Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach 
-(\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}),  while some do so
+(\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}, \cite{DBLP:journals/corr/MontavonSM17}, \cite{https://doi.org/10.48550/arxiv.1711.00867}),  while some do so
 from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Evaluation of interpretability methods is somewhat tricky in this sense , how does someone define a good explanation ? Clearly since there is no ground truth for that there is no right nor wrong, at the end of the day some methods are better then others on different types of models and different types of data-set. \\ 
 
-This is the main motivation this research,  refinement and exploration of the notion on how can on understand better our interpretability methods and their limitations, how can we evaluate then in a more concrete manner. Can we expand it to a more scientific domain e.g. Hydrology and use some human ground expertise to achieve that. 
+This is the main motivation this research,  refinement and exploration of the notion on how can we understand better our interpretability methods and their limitations, how can we evaluate then in a more concrete manner. Can we expand it to a more scientific domain e.g. Hydrology and use some human ground expertise to achieve that. 
 
 
 \newpage
@@ -164,7 +165,10 @@ In his later work Abedeyo et al. \cite{DBLP:journals/corr/abs-2011-05429} used a
 
 \textit{Spurious bug implementation} was implemented by placing all birds onto one of the sky backgrounds and all dogs onto a bamboo forest background. Logically, explanations on a model that was trained on a data-set like this would identify this correlation i.e. attributing most of the background pixels to the class prediction. In a sense this is a ground truth for the explanation output itself and a "debug" tool for the attribution method.\\
 
-\textit{Test-time contamination bugs} assess the ability of attributions to diagnose domain shift, e.g. the attribution for an MNIST input from a model trained on MNIST, to an attribution for the same input but derived from an output of a model trained on a different data-set. 
+\textit{Test-time contamination bugs} assess the ability of attributions to diagnose domain shift, e.g. the attribution for an MNIST input from a model trained on MNIST, to an attribution for the same input but derived from an output of a model trained on a different data-set. \\
+
+
+The metric used for the attributes is SSIM to compare the similarity between the explanation in the aforementioned tests, also a human subject study was conducted that eventually showed users are more biased towards the model predictions and not the attributions for the task of identifying the bugs in the tests.
 
 \subsection{Axiomatic approach framework}
 
@@ -172,15 +176,18 @@ In this section we'll present the approach of desired properties which attributi
 
 Although these \textit{axioms} are not comparable between methods per se they're still worth to mentioned as it can a used as a rigorous framework to evaluate these methods and some can become more quantifiable in a sense as we'll explain later in this section. \\
 
+\subsubsection{Sensitivity, implementation invariance, linearity and Symmetry preserving}
+
 Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} introduced these axioms in his novel attributed-based method \textit{integrated gradients}:
-\begin{enumerate}
+\begin{itemize}
 	\item \textit{Sensitivity} -  If the function implemented by the deep network does not depend (mathematically) on some variable, then the attribution to that variable is always zero.
 	\item \textit{Implementation invariance} - Attributions should be identical for two functionally equivalent networks.
 	\item \textit{Linearity} - Attributions method should preserve any linearity within the network.
 	\item \textit{Symmetry preserving} - If 2 inputs to the network are symmetrical $F(x,y)=F(y,x)$, so should be their corresponding attributions. 
-\end{enumerate}
+\end{itemize}
 
-Montavon et al \cite{DBLP:journals/corr/MontavonSM17} introduced the desired property of \textit{continuity} as follows:
+\subsubsection{Continuity}
+Montavon et al \cite{DBLP:journals/corr/MontavonSM17} introduced the desired axiomatic property of \textit{continuity} as follows:
 \begin{itemize}
 	\item \textit{Continuity} - If two data points are nearly equivalent, then the explanations of their predictions should also be	nearly equivalent.
 \end{itemize}
@@ -190,19 +197,54 @@ This axiom can be also quantified as follows, denote an attribution method $E$, 
 	\underset{x \ne x'}{\text{max}} \frac{\| E-E'\|_1}{\| x-x'\|_2}
  \end{align*}
 
+\subsubsection{Input invariance}
 
-\textcolor{red}{Paragraph about Monotonicity } \cite{DBLP:journals/corr/abs-2007-07584} \\
+Kindermans et al. \cite{https://doi.org/10.48550/arxiv.1711.00867} introduced the \textit{Input invariance} axiom:
+\begin{itemize}
+	\item \textit{Input invariance} - The attribution-based method should mirror the sensitivity of the model with respect to transformations of the input
+\end{itemize}
 
-\textcolor{red}{Paragraph about Sensitivity-n} \cite{https://doi.org/10.48550/arxiv.1711.06104} \\
+For example a constant shift in the input with two model that were trained on the original data and the shifted data and have the \textbf{same predictions} should have the \textbf{same attributions}. \\
+
+\subsubsection{Monotonicity}
+
+Although \textit{monotonicity} defined as metric in \cite{DBLP:journals/corr/abs-2007-07584} it stems from an axiomatic approach on the mechanism of attribution methods that assign an importance value to each feature. From a more theoretical approach a more concrete metric was proposed namely \textit{monotonicity}. \\
+
+Nguyen et al. \cite{DBLP:journals/corr/abs-2007-07584}  posit that feature importance rank attributions should follow a desired property, denote the explanation $E_i$ for feature $i \in [N], y^* = f(\mathbf{x}^*)$:
+ \begin{align*}
+	|E_i| \propto \mathbb{E}(l(y^*, f_i)|\mathbf{x}^*_{-i}) = \int_{\mathcal{X}_i} l(y^*, f_i(x_i)p(x_i) d x_i
+\end{align*}
+
+Where $l$ is the loss function, density probability function for feature $x_i$ is $p(x_i)$ and $f_i$ is the restriction of the function $f$ to the feature $i$ obtained by fixing the other features at the values $\mathbf{x}^{*}_{-i} = (x_1, ..., x_{i-1}, x_{i+1} , ... , x_{N})$, so the monotonicity metric for attribution $E$ is defined as the Spearman’s
+correlation coefficient $\rho_{S}$:
+ \begin{align*}
+ 	&\mathbf{e} = [|E_1|, ..., |E_i|,..., |E_N|] \\
+	&\mathbf{f}  =  [\mathbb{E}(l(y^*, f_1)|\mathbf{x}^*_{-1}), ..., \mathbb{E}(l(y^*, f_i)|\mathbf{x}^*_{-i}) ,..., \mathbb{E}(l(y^*, f_N)|\mathbf{x}^*_{-N})] \\
+	&\text{monotonicity}(E,f, \mathbf{x}^*,y^*)   = \rho_{S}(\mathbf{e}, \mathbf{f})
+\end{align*}
 
 
+\subsubsection{Completeness and sensitivity-n}
+Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} proved that the attribution-based method $itegrated gradients$ has holds the axiom of \textit{completeness}:
+ \begin{align*}
+	&\sum_{i=1}^N IG(\mathbf{x}) = f(\mathbf{x})-f(\mathbf{x}')
+\end{align*}
+
+Where $\mathbf{x}'$ is a baseline input that is used for the attribution calculation and we'll be elaborated in later sections.  
+ 
+Ancona et al. \cite{https://doi.org/10.48550/arxiv.1711.06104} generalized the \textit{completeness} axioms namely, \textit{sensitivity-n}:
+\begin{itemize}
+	\item \textit{sensitivity-n}: For any subset of features of cardinality $n$ , $\mathbf{x}_s= [x_1, ...,x_n] \subseteq \mathbf{x} $ it holds $\sum_{i=1}^n E_i = f(\mathbf{x})- f(\mathbf{x}_{[\mathbf{x}_S =0]})$ 
+\end{itemize}
+
+It easy to see that \textit{completeness} axiom is a private case of the \textit{sensitivity-n} axiom when $n=N$.
 
 \newpage
 \section{Interpretability methods}
 
 For this section we'll assume we have a model $y=f(x)$ and an attribution-based interpretability  method that outputs an explanation $E$ for the prediction $y$ with the same dimensions as the input $x$.
 
-\subsection{Grad }
+\subsection{Grad}
 	The most straight forward interpretability method \cite{baehrens2010explain} \cite{https://doi.org/10.48550/arxiv.1312.6034}, also known as saliency map:
 \begin{align*}
 	E_\text{GRAD}(f, x)  = \nabla_{x}f(x)

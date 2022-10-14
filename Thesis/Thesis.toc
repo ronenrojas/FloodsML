@@ -4,43 +4,37 @@
 \contentsline {chapter}{\numberline {3}Literature review}{6}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Interpretability methods frameworks and metrics}{7}{section.3.1}%
 \contentsline {subsection}{\numberline {3.1.1}Feature importance removal framework}{7}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Interpretability as a debug tool framework}{8}{subsection.3.1.2}%
-\contentsline {subsection}{\numberline {3.1.3}Axiomatic approach framework}{10}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {3.1.2}Interpretability as a debug tool framework}{9}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Axiomatic approach framework}{11}{subsection.3.1.3}%
 \contentsline {subsubsection}{\numberline {3.1.3.1}Sensitivity, implementation invariance, linearity and Symmetry preserving}{11}{subsubsection.3.1.3.1}%
 \contentsline {subsubsection}{\numberline {3.1.3.2}Continuity}{11}{subsubsection.3.1.3.2}%
-\contentsline {subsubsection}{\numberline {3.1.3.3}Input invariance}{11}{subsubsection.3.1.3.3}%
+\contentsline {subsubsection}{\numberline {3.1.3.3}Input invariance}{12}{subsubsection.3.1.3.3}%
 \contentsline {subsubsection}{\numberline {3.1.3.4}Monotonicity}{12}{subsubsection.3.1.3.4}%
-\contentsline {subsubsection}{\numberline {3.1.3.5}Completeness and sensitivity-n}{12}{subsubsection.3.1.3.5}%
-\contentsline {section}{\numberline {3.2}Interpretability methods}{13}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Grad}{13}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Integrated Gradients}{13}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}Local Integrated Gradients}{13}{subsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.2.4}Smooth Grad}{14}{subsection.3.2.4}%
-\contentsline {subsection}{\numberline {3.2.5}VarGrad}{14}{subsection.3.2.5}%
-\contentsline {subsection}{\numberline {3.2.6}Smooth Grad Square SG-SQ}{14}{subsection.3.2.6}%
-\contentsline {subsection}{\numberline {3.2.7}Shapely Value Sampling}{14}{subsection.3.2.7}%
-\contentsline {subsection}{\numberline {3.2.8}Deep Lift SHAP}{14}{subsection.3.2.8}%
-\contentsline {subsection}{\numberline {3.2.9}local Deep lift SHAP}{15}{subsection.3.2.9}%
-\contentsline {subsection}{\numberline {3.2.10}Feature Ablation}{15}{subsection.3.2.10}%
-\contentsline {section}{\numberline {3.3}Recognized gap}{16}{section.3.3}%
-\contentsline {chapter}{\numberline {4}Research objective }{17}{chapter.4}%
-\contentsline {chapter}{\numberline {5}Data and Models}{19}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Data}{19}{section.5.1}%
-\contentsline {subsection}{\numberline {5.1.1}DREAM}{19}{subsection.5.1.1}%
-\contentsline {subsection}{\numberline {5.1.2}CARAVAN}{19}{subsection.5.1.2}%
-\contentsline {section}{\numberline {5.2}Models}{19}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Feed Forward Neural Network}{19}{subsection.5.2.1}%
-\contentsline {subsubsection}{\numberline {5.2.1.1}Neural Network - Introduction}{19}{subsubsection.5.2.1.1}%
-\contentsline {subsubsection}{\numberline {5.2.1.2}Neural Network - Function definitions}{21}{subsubsection.5.2.1.2}%
-\contentsline {subsubsection}{\numberline {5.2.1.3}Neural Network - Layering functions}{22}{subsubsection.5.2.1.3}%
-\contentsline {subsubsection}{\numberline {5.2.1.4}Neural Network - Hyperbolic tangent function}{22}{subsubsection.5.2.1.4}%
-\contentsline {subsubsection}{\numberline {5.2.1.5}Neural Network - Problems}{22}{subsubsection.5.2.1.5}%
-\contentsline {subsection}{\numberline {5.2.2}RNN}{23}{subsection.5.2.2}%
-\contentsline {subsubsection}{\numberline {5.2.2.1}RNN - Introduction}{23}{subsubsection.5.2.2.1}%
-\contentsline {subsubsection}{\numberline {5.2.2.2}RNN - Simple example}{23}{subsubsection.5.2.2.2}%
-\contentsline {subsubsection}{\numberline {5.2.2.3}RNN - Multi-Layer}{24}{subsubsection.5.2.2.3}%
-\contentsline {subsubsection}{\numberline {5.2.2.4}RNN - Training }{24}{subsubsection.5.2.2.4}%
-\contentsline {subsubsection}{\numberline {5.2.2.5}RNN - Problems}{25}{subsubsection.5.2.2.5}%
+\contentsline {subsubsection}{\numberline {3.1.3.5}Completeness and sensitivity-n}{13}{subsubsection.3.1.3.5}%
+\contentsline {section}{\numberline {3.2}Interpretability methods}{14}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Grad}{14}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Integrated Gradients}{14}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Local Integrated Gradients}{14}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Smooth Grad}{15}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}VarGrad}{15}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {3.2.6}Smooth Grad Square SG-SQ}{15}{subsection.3.2.6}%
+\contentsline {subsection}{\numberline {3.2.7}Shapely Value Sampling}{15}{subsection.3.2.7}%
+\contentsline {subsection}{\numberline {3.2.8}Feature Ablation}{16}{subsection.3.2.8}%
+\contentsline {section}{\numberline {3.3}Recognized gap}{17}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Research objective }{18}{chapter.4}%
+\contentsline {chapter}{\numberline {5}Data and Models}{20}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Data}{20}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}DREAM}{20}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}CARAVAN}{20}{subsection.5.1.2}%
+\contentsline {section}{\numberline {5.2}Models}{21}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Feed Forward Neural Network}{21}{subsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.1.1}Neural Network - Introduction}{21}{subsubsection.5.2.1.1}%
+\contentsline {subsubsection}{\numberline {5.2.1.2}Neural Network - Function definitions}{22}{subsubsection.5.2.1.2}%
+\contentsline {subsubsection}{\numberline {5.2.1.3}Neural Network - Layering functions}{23}{subsubsection.5.2.1.3}%
+\contentsline {subsubsection}{\numberline {5.2.1.4}Neural Network - Hyperbolic tangent function}{23}{subsubsection.5.2.1.4}%
+\contentsline {subsection}{\numberline {5.2.2}RNN}{24}{subsection.5.2.2}%
+\contentsline {subsubsection}{\numberline {5.2.2.1}RNN - Introduction}{24}{subsubsection.5.2.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2.2}RNN - Multi-Layer}{25}{subsubsection.5.2.2.2}%
 \contentsline {subsection}{\numberline {5.2.3}LSTM}{26}{subsection.5.2.3}%
 \contentsline {subsubsection}{\numberline {5.2.3.1}LSTM - Motivation}{26}{subsubsection.5.2.3.1}%
 \contentsline {subsubsection}{\numberline {5.2.3.2}LSTM - Principles}{26}{subsubsection.5.2.3.2}%

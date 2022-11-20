@@ -60,21 +60,21 @@
 
 In recent years machine learning models became the "go-to" solution for almost every task of estimation or prediction. It has Replaced the somewhat tedious task of trying to manually extract insights from the data.\\
 
-It is definitely easier in a sense to let the computer "learn" from the data whatever it needs, all you need is a strong GPU and good clean data, once you've got all your ducks in a row you're good to go. The performance of these kind of models is uncanny and unprecedented and outperform humans on specific tasks (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}, \cite{DBLP:journals/corr/MnihKSGAWR13}, \cite{Silver_2016}).\\
+It is definitely easier in a sense to let the computer "learn" from the data whatever it needs, all you need is a strong GPU and good clean data, once you've got all your ducks in a row you're good to go. The performance of these kind of models is unprecedented and outperform humans on specific tasks (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}, \cite{DBLP:journals/corr/MnihKSGAWR13}, \cite{Silver_2016}).\\
 
-But with great power comes great responsibility, how do we explain a model prediction in a sensible manner. Most models are considered to be \textit{"black boxes"} and humanly incomprehensible. Given a machine learning model we are now interested more on "why" and less on "what" and most of the time a simple accuracy metric is not enough . This fact gave rise to significant development in the field interpretability methods 
-\cite{molnar2019}. \\
+But with great power comes great responsibility, how do we explain a model prediction in a sensible manner. Most models are considered to be \textit{"black boxes"} and humanly incomprehensible. Given a machine learning model we are now interested more on "why" and less on "what" and most of the time a simple accuracy metric is not enough . This fact gave rise to significant development in the field interpretability methods (\cite{molnar2019}, \cite{electronics10050593}, \cite{DBLP:journals/corr/abs-2012-14261}, \cite{DBLP:journals/corr/abs-1802-00614}, \cite{DBLP:journals/corr/abs-2003-07631}, \cite{DBLP:journals/corr/abs-2007-15911}, \cite{samek2019explainable}, \cite{DBLP:journals/corr/abs-2012-15445}). \\
 
 Interpretability tries to tackle this issue and tries to answer these lines of questions:
 \begin{itemize}
-	\item \textit{Why did the model made that prediction ?}	
-	\item \textit{Do we have a human-friendly explanation for this prediction ?}	
-	\item \textit{Can we visualize this explanation ? }	
+	\item \textit{Why did the model made that prediction?}	
+	\item \textit{Do we have a human-friendly explanation for this prediction?}	
+	\item \textit{Can we visualize this explanation? }	
 \end{itemize}
 
-Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach 
-(\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}, \cite{DBLP:journals/corr/MontavonSM17}, \cite{https://doi.org/10.48550/arxiv.1711.00867}),  while some do so
-from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Evaluation of interpretability methods is somewhat tricky in this sense , how does someone define a good explanation ? Clearly since there is no ground truth for that there is no right nor wrong, at the end of the day some methods are better then others on different types of models and different types of data-set. \\ 
+Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach (\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}, \cite{DBLP:journals/corr/MontavonSM17}, \cite{https://doi.org/10.48550/arxiv.1711.00867}),  while some do so from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Even though visualization results can be insightful to humans, such evaluations frameworks are not objectives and time consuming.\\ 
+
+
+Evaluation of interpretability methods is somewhat convoluted and sometimes untrustworthy \cite{DBLP:journals/corr/abs-1912-01451}, how does someone define a good explanation? Clearly since there is no ground truth for that there is no right nor wrong, at the end of the day some methods are better then others on different types of models and different types of data-set. \\ 
 
 This is the main motivation this research,  refinement and exploration of the notion on how can we understand better our interpretability methods and their limitations, how can we evaluate then in a more concrete manner. Can we expand it to a more scientific domain e.g. Hydrology and use some human ground expertise to achieve that. 
 
@@ -83,162 +83,24 @@ This is the main motivation this research,  refinement and exploration of the no
 
 \chapter{Literature review} 
 
-In this chapter we'll review recent work for frameworks of evaluating interpretability methods and what evaluation metrics were used. We're also going to review the interpretability method used in the current framework. We'll constrain the scope of this work only to model attribution-based explanations \cite{electronics10050593}, these kind of explanations are local and post-hoc i.e., given a trained model and an input for the prediction, attribution measures or ranks each input feature to explain the model's prediction. \\
+In this chapter we will review interpretability methods that gained popularity in recent years. We will also review frameworks of evaluating interpretability methods and what evaluation metrics were used. . We'll constrain the scope of this work only to model attribution-based explanations \cite{electronics10050593}, these kind of explanations are local and post-hoc i.e., given a trained model and an input for the prediction, attribution measures or ranks each input feature to explain the model's prediction. \\
 
+\section{What is an attribute?}
 Formally, if we have a model that was trained to perform a specific task:
 \begin{align*}
 	y & = f_{\theta}(x) \\
 	x & \in \mathbb{R}^n, y \in \mathbb{R}
 \end{align*}
 
-An attribution method provides an explanation $e$ for the input $x$:
+An attribution method provides an explanation $E$ for the input $x$:
 \begin{align*}
-	e &= \text{attrib}(f_{\theta}, x) \\
-	x & \in \mathbb{R}^n, e \in \mathbb{R}^n
+	E &= \text{attrib}(f_{\theta}, x) \\
+	x & \in \mathbb{R}^n, E \in \mathbb{R}^n
 \end{align*}
 
-$e$ gives an explanation power rank for each input coordinate (feature) for the prediction $y=f_{\theta}(x)$.
+$E$ gives an explanation power rank for each input coordinate for the prediction $y=f_{\theta}(x)$. Each coordinate of the input for a model is usually called a feature. 
 
 
-\section{Interpretability methods frameworks and metrics}
-
-\subsection{Feature importance removal framework}
-
-There has been a line of study to treat attribution-based explanations as feature importance (\cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758} \cite{DBLP:journals/corr/MontavonSM17}).  This line of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
-
-By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" the model quicker in a sense this method is better and vice versa if we were able to sustain accuracy or other performance metrics of a model when removing least important features from explanations ranks. Motavon et al. \cite{DBLP:journals/corr/MontavonSM17} coined this desired property as \textit{Explanation Selectivity}.\\
-
-Samec et al. \cite{https://doi.org/10.48550/arxiv.1509.06321} have devised an input perturbation process called \textit{most relevant first}, abbreviated MoRF for the trained model $f(x)$. In this process we remove information from the input by setting the coordinates (or a region of surrounding pixels e.g. $9 \times 9$ neighborhood) to a uniform distribution. MoRF process is done by the individual attribution ranking $e$ of a given input $x$, this is done for $L$ iterations:
-\begin{align*}
-	x_{\text{MoRF}}^{(0)} & = x  \\ 
-	\forall 1 \le k \le L \quad x_{\text{MoRF}}^{(k)} &= \text{Remove} (x_{\text{MoRF}}^{(k-1)}, e)	
-\end{align*}
-The metric used is the area over the MoRF perturbation curve (AOPC):
-\begin{align*}
-	\text{AOPC} = \Braket{	\sum_{k=0}^{L}f(x) -f(x_{\text{MoRF}}^{(k)})}_{p(x)}
-\end{align*}
-Where $\Braket{\cdot}_{p(x)}$ means we average over all inputs in the data set, a larger AOPC means a sharper decrease of the MoRF process ($f(x_{\text{MoRF}}^{(k)})$) thus a better feature importance for the attribution-based explanation. \\
-
-The opposite approach then is the perturbation process \textit{least relevant first}, abbreviated LeRF. The proposed metric is the area between th perturbations curves:
-\begin{align*}
-	\text{ABPC} = \Braket{	\sum_{k=0}^{L}f(x_{\text{LeRF}}^{(k)}) -f(x_{\text{MoRF}}^{(k)})}_{p(x)}
-\end{align*}
-In this case the LeRF process needs to sustain the information as much a possibles thus \textbf{larger} area is wanted.\\
-
-In \cite{LRP} to evaluate the layer-wise relevance propagation (LRP) interpretability method "pixel-flipping" was used.  Arras et el. \cite{DBLP:journals/corr/ArrasHMMS16a} also used LRP evaluation and simply "deleted" word for their model into by setting the corresponding word embedding to zero in order. \\
-
-Hooker et al.  \cite{https://doi.org/10.48550/arxiv.1806.10758} opine that any removal of information from the input is disruptive since the metrics will be used on modified input that is not from the data set original distribution, thus the generalization errors of "out of sample" inputs for the model becomes dominant. \\
-
-To mitigate this case they presented a training strategy, RemOve and Retrain (ROAR). This ensures that the metric used, which in the case was a simple test-set accuracy, is used in sample from the distrubution the model was trained on. The opposite approach was to Keep And Retrain (KAR). In this approach, \textbf{minimizing} degradation to test-set accuracy is desirable\\
-
-\newpage
-\subsection{Interpretability as a debug tool framework}
-
-Another line of study is to let the interpretability method to be a debug tool for the model or training process itself (\cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}). If an interpretability method is sensitive to a model that trained or tested in an ill manner compared to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself. \\
-
-Adebayo et al. \cite{https://doi.org/10.48550/arxiv.1810.03292} proposed 2 test frameworks: 
-\begin{enumerate}
-	\item \textit{Model parameter randomization test}: Apply attributions-based method on a trained model and on the same architecture but on a randomly initialized untrained model.
-	\item \textit{Data randomization test}: Apply attributions-based method on a trained model and on a copy of the mode trained on a copy of the data set in which all labels were randomly permuted.
-\end{enumerate}
-
-\textit{Model parameter randomization} tests whether attributions method outputs differ substantially between the 2 models, if the output are similar it means the method is insensitive to model parameters which in a sense does not bode well to the explanation goals which are to understand why did the model made its prediction. It's important to note that the randomization of the model parameters was done in a cascading fashion from top to bottom layers. \\
-
-\textit{Data randomization} tests again as before the difference between the 2 models, An insensitivity to the permuted labels reveals that the method does not depend on the relationship between input and labels which is not a desired property for an attribution-based method. \\
-
-\cite{https://doi.org/10.48550/arxiv.1810.03292} used visualization to show the the differences in the attributes, but also used more rigorous ways namely \textit{similarity metrics} as follows:
-\begin{enumerate}
-	\item Spearman rank correlation with / without  absolute value.
-	\item Structural similarity index measure (SSIM \cite{1284395}).
-	\item Pearson correlation of the histogram of gradients (HOGs)
-\end{enumerate}
-
-In his later work Abedeyo et al. \cite{DBLP:journals/corr/abs-2011-05429} used a more elaborate scheme for tampering with the data-set, the training or evaluation process itself, simply named "bugs":
-\begin{enumerate}
-	\item \textit{Data contamination bugs} 
-	\begin{enumerate}
-		\item \textit{Labeling errors} - Incorrectly labeled data , Similar to previous work.
-		\item \textit{Spurious Correlation} - Make the model associate uncorrelated reason to the task, e.g. blue sky backgrounds with the bird class. 
-	\end{enumerate}
-	\item \textit{Model contamination bugs} - re-initialization of model weights, similar to previous work.
-	\item \textit{Test-time contamination bugs} - Out of distribution (OOD) samples, domain shift for the data-set. 
-\end{enumerate}
-
-\textit{Spurious bug implementation} was implemented by placing all birds onto one of the sky backgrounds and all dogs onto a bamboo forest background. Logically, explanations on a model that was trained on a data-set like this would identify this correlation i.e. attributing most of the background pixels to the class prediction. In a sense this is a ground truth for the explanation output itself and a "debug" tool for the attribution method.\\
-
-\textit{Test-time contamination bugs} assess the ability of attributions to diagnose domain shift, e.g. the attribution for an MNIST input from a model trained on MNIST, to an attribution for the same input but derived from an output of a model trained on a different data-set. \\
-
-
-The metric used for the attributes is SSIM to compare the similarity between the explanation in the aforementioned tests, also a human subject study was conducted that eventually showed users are more biased towards the model predictions and not the attributions for the task of identifying the bugs in the tests.
-\newpage
-\subsection{Axiomatic approach framework}
-
-In this section we'll present the approach of desired properties which attribution-based interpretability ought to have. These properties are mostly common sense and stem from a more theoretical thought process when devising a scheme for an attribution method hence we call them \textit{axioms} in this context. \\ 
-
-Although these \textit{axioms} are not comparable between methods per se they're still worth to mentioned as it can a used as a rigorous framework to evaluate these methods and some can become more quantifiable in a sense as we'll explain later in this section. \\
-
-\subsubsection{Sensitivity, implementation invariance, linearity and Symmetry preserving}
-
-Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} introduced these axioms in his novel attributed-based method \textit{integrated gradients}:
-\begin{itemize}
-	\item \textit{Sensitivity} -  If the function implemented by the deep network does not depend (mathematically) on some variable, then the attribution to that variable is always zero.
-	\item \textit{Implementation invariance} - Attributions should be identical for two functionally equivalent networks.
-	\item \textit{Linearity} - Attributions method should preserve any linearity within the network.
-	\item \textit{Symmetry preserving} - If 2 inputs to the network are symmetrical $F(x,y)=F(y,x)$, so should be their corresponding attributions. 
-\end{itemize}
-
-\subsubsection{Continuity}
-Montavon et al \cite{DBLP:journals/corr/MontavonSM17} introduced the desired axiomatic property of \textit{continuity} as follows:
-\begin{itemize}
-	\item \textit{Continuity} - If two data points are nearly equivalent, then the explanations of their predictions should also be	nearly equivalent.
-\end{itemize}
-
-This axiom can be also quantified as follows, denote an attribution method $E$, two inputs $x,x'$ and their explanations respectively $E,E'$ :
- \begin{align*}
-	\underset{x \ne x'}{\text{max}} \frac{\| E-E'\|_1}{\| x-x'\|_2}
- \end{align*}
-
-\subsubsection{Input invariance}
-
-Kindermans et al. \cite{https://doi.org/10.48550/arxiv.1711.00867} introduced the \textit{Input invariance} axiom:
-\begin{itemize}
-	\item \textit{Input invariance} - The attribution-based method should mirror the sensitivity of the model with respect to transformations of the input
-\end{itemize}
-
-For example a constant shift in the input with two model that were trained on the original data and the shifted data and have the \textbf{same predictions} should have the \textbf{same attributions}. \\
-
-\subsubsection{Monotonicity}
-
-Although \textit{monotonicity} defined as metric in \cite{DBLP:journals/corr/abs-2007-07584} it stems from an axiomatic approach on the mechanism of attribution methods that assign an importance value to each feature. From a more theoretical approach a more concrete metric was proposed namely \textit{monotonicity}. \\
-
-Nguyen et al. \cite{DBLP:journals/corr/abs-2007-07584}  posit that feature importance rank attributions should follow a desired property, denote the explanation $E_i$ for feature $i \in [N], y^* = f(\mathbf{x}^*)$:
- \begin{align*}
-	|E_i| \propto \mathbb{E}(l(y^*, f_i)|\mathbf{x}^*_{-i}) = \int_{\mathcal{X}_i} l(y^*, f_i(x_i)p(x_i) d x_i
-\end{align*}
-
-Where $l$ is the loss function, density probability function for feature $x_i$ is $p(x_i)$ and $f_i$ is the restriction of the function $f$ to the feature $i$ obtained by fixing the other features at the values $\mathbf{x}^{*}_{-i} = (x_1, ..., x_{i-1}, x_{i+1} , ... , x_{N})$, so the monotonicity metric for attribution $E$ is defined as the Spearman’s
-correlation coefficient $\rho_{S}$:
- \begin{align*}
- 	&\mathbf{e} = [|E_1|, ..., |E_i|,..., |E_N|] \\
-	&\mathbf{f}  =  [\mathbb{E}(l(y^*, f_1)|\mathbf{x}^*_{-1}), ..., \mathbb{E}(l(y^*, f_i)|\mathbf{x}^*_{-i}) ,..., \mathbb{E}(l(y^*, f_N)|\mathbf{x}^*_{-N})] \\
-	&\text{monotonicity}(E,f, \mathbf{x}^*,y^*)   = \rho_{S}(\mathbf{e}, \mathbf{f})
-\end{align*}
-
-
-\subsubsection{Completeness and sensitivity-n}
-Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} proved that the attribution-based method $itegrated gradients$ has holds the axiom of \textit{completeness}:
- \begin{align*}
-	&\sum_{i=1}^N IG(\mathbf{x}) = f(\mathbf{x})-f(\mathbf{x}')
-\end{align*}
-
-Where $\mathbf{x}'$ is a baseline input that is used for the attribution calculation and we'll be elaborated in later sections.  
- 
-Ancona et al. \cite{https://doi.org/10.48550/arxiv.1711.06104} generalized the \textit{completeness} axioms namely, \textit{sensitivity-n}:
-\begin{itemize}
-	\item \textit{sensitivity-n}: For any subset of features of cardinality $n$ , $\mathbf{x}_s= [x_1, ...,x_n] \subseteq \mathbf{x} $ it holds $\sum_{i=1}^n E_i = f(\mathbf{x})- f(\mathbf{x}_{[\mathbf{x}_S =0]})$ 
-\end{itemize}
-
-It easy to see that \textit{completeness} axiom is a private case of the \textit{sensitivity-n} axiom when $n=N$.
 
 \newpage
 \section{Interpretability methods}
@@ -250,6 +112,14 @@ For this section we'll assume we have a model $y=f(x)$ and an attribution-based 
 \begin{align*}
 	E_\text{GRAD}(f, x)  = \nabla_{x}f(x)
 \end{align*}
+
+
+\subsection{Input $\times$ Gradient}
+Saliency map can be substantially improved \cite{DBLP:journals/corr/ShrikumarGSK16} by simply multiplying the gradient with the input, this is basically first-order Taylor approximation in a sense:
+\begin{align*}
+	E_{\text{INPUT} \times \text{GRAD}}(f, x)  = x \odot \nabla_{x}f(x)
+\end{align*}
+
 
 \subsection{Integrated Gradients}
 Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} proposed this interpretability method, abbreviated IG, denote the coordinate $i$ as of input $x$ as $x_i$: 
@@ -298,20 +168,226 @@ Where $\odot$ is the element-wise product.
 
 
 \subsection{Shapely Value Sampling}
-	Shapley values provide is a concept in game theory to calculate "fair" distribution of winnings for each player members of the winning coalition in a cooperative game by measuring marginal contribution to the final outcome (\cite{CASTRO20091726}, \cite{trumbelj2010AnEE} \cite{Shapley+2016+307+318}, \cite{https://doi.org/10.48550/arxiv.2104.12199}, \cite{https://doi.org/10.48550/arxiv.1903.10464}).\\
+Shapley values provide is a concept in game theory to calculate "fair" distribution of winnings for each player members of the winning coalition in a cooperative game by measuring marginal contribution to the final outcome (\cite{CASTRO20091726}, \cite{trumbelj2010AnEE} \cite{Shapley+2016+307+318}, \cite{https://doi.org/10.48550/arxiv.2104.12199}, \cite{https://doi.org/10.48550/arxiv.1903.10464}).\\
 		
-	Denote $\mathcal{M}, $ the set of players i.e. the grand coalition, $\mathcal{S}$ the set of players in the partial coalition and $v$ is the contribution map between subsets of players, the Shapley value $\phi_i$ for coalition member $i$ is defined as follows:
-	\begin{align*}
-		\phi_i(v)=  \sum_{\mathcal{S} \subseteq \mathcal{M} \setminus \{i\}} {|\mathcal{M}| \choose  1, |\mathcal{S}|, |\mathcal{M}| -|\mathcal{S}| -1}^{-1}\Big(v(\mathcal{S}\cup \{i\}) - v(\mathcal{S}) \Big)
-	\end{align*}
+Denote $\mathcal{M}, $ the set of players i.e. the grand coalition, $\mathcal{S}$ the set of players in the partial coalition and $v$ is the contribution map between subsets of players, the Shapley value $\phi_i$ for coalition member $i$ is defined as follows:
+\begin{align*}
+	\phi_i(v)=  \sum_{\mathcal{S} \subseteq \mathcal{M} \setminus \{i\}} {|\mathcal{M}| \choose  1, |\mathcal{S}|, |\mathcal{M}| -|\mathcal{S}| -1}^{-1}\Big(v(\mathcal{S}\cup \{i\}) - v(\mathcal{S}) \Big)
+\end{align*}
 	
-	Based on this definition a perturbation process for an attribution-based explanation can be devised, by taking a random permutation of the input features $x_i, i \in [N]$ and adding them one-by-one to the given baseline $x'$ and defining $v=f(x)- f(x')$. Repeating this process $n$ times, each time choosing a new random permutation of the input features will yield to an empiric estimation of the real Shapley value.
+Based on this definition an efficient  perturbation process for an attribution-based explanation can be devised \cite{strumbelj2010efficient}. By taking a random permutation of the input features $x_i, i \in [N]$, adding them one-by-one to the given baseline $x'$ and defining $v=f(x)- f(x')$. Repeating this process $n$ times, each time choosing a new random permutation of the input features will yield to an empiric estimation of the real Shapley value.
+
+
+\subsection{LRP}
+Layer-wise relevance propagation abbreviated LRP \cite{LRP} \cite{DBLP:journals/corr/MontavonSM17}, is a method that tries to estimate every neurons' layer relevancy. The model output score represents the initial relevance which then is being propagated backwards in a set of pre-defined rules the are applied sequentially to all layers of the model. When the propagation reaches the first layer we will get the wanted attribution of the input. This backward propagation mechanism resembles somewhat of a numerical differentiation \cite{DBLP:journals/corr/abs-2012-14261}:  
+
+\begin{align*}
+	[E_\text{LRP}(f, x)]_i  =  x_i \cdot \frac{\partial^{g}f(x)}{\partial x_i}, \quad g(z) = \frac{\sigma(z)}{z}
+\end{align*}
+where $\sigma(z)$ is the non-linearity in the network and $g(z)$ is a replacement the derivative of $\sigma(z)$.
 	
+\subsection{DeepLift}
+Shrikumar et al. \cite{DBLP:journals/corr/ShrikumarGK17} tried to devise a more intricate backward propagation mechanism called Deep Learning Important FeaTures, DeepLift in short. \\
+
+The mechanism used pre-defined rules for each type of non-linearity and layer type. Their novelty was introducing a reference point in their propagation mechanism.  
+\begin{align*}
+	[E_\text{DeepLift}(f, x)]_i  =  (x_i-x_i^{ref}) \cdot \frac{\partial^{g}f(x)}{\partial x_i}, \quad g(z) = \frac{\sigma(z)-\sigma(z^{ref})}{z-z^{ref}}
+\end{align*}
+
+Both LRP and DeepLIFT have gained the nickname  \textit{discrete gradient methods} \cite{DBLP:journals/corr/abs-2012-14261}.
 
 \subsection{Feature Ablation}
    A perturbation based approach to computing attribution, replacing each input feature $x_i$ with a given baseline $x'_i$, and computing the difference in output. 
+   
+\subsection{Guided Grad CAM}
+Computes element-wise product of guided backpropagation attributions with upsampled (non-negative) GradCAM attributions. GradCAM attributions are computed with respect to the layer provided in the constructor, and attributions are upsampled to match the input size. GradCAM is designed for convolutional neural networks, and is usually applied to the last convolutional layer.
+
+Note that if multiple input tensors are provided, attributions for each input tensor are computed by upsampling the GradCAM attributions to match that input’s dimensions. If interpolation is not possible for the input tensor dimensions and interpolation mode, then an empty tensor is returned in the attributions for the corresponding position of that input tensor. This can occur if the input tensor does not have the same number of dimensions as the chosen layer’s output or is not either 3D, 4D or 5D.
+
+Note that attributions are only meaningful for input tensors which are spatially alligned with the chosen layer, e.g. an input image tensor for a convolutional layer.
+\textcolor{red}{Short paragraph about Guided Grad CAM}\cite{DBLP:journals/corr/SelvarajuDVCPB16}
+
+
+\subsection{Deconvolution}
+Computes attribution using deconvolution. Deconvolution computes the gradient of the target output with respect to the input, but gradients of ReLU functions are overridden so that the gradient of the ReLU input is simply computed taking ReLU of the output gradient, essentially only propagating non-negative gradients (without dependence on the sign of the ReLU input).
+\textcolor{red}{Short paragraph about Deconvolution}\cite{DBLP:journals/corr/ZeilerF13} \cite{10.1007/978-3-319-46466-4_8}
+
+\subsection{Lime}
+\textcolor{red}{Short paragraph about Lime} \cite{DBLP:journals/corr/RibeiroSG16}
+
+
 
 \newpage
+
+\section{Interpretability methods frameworks and metrics}
+
+\subsection{Feature importance removal framework}
+
+There has been a line of study to treat attribution-based explanations as feature importance (\cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758} \cite{DBLP:journals/corr/MontavonSM17},\cite{LRP},  \cite{DBLP:journals/corr/ArrasHMMS16a}, \cite{DBLP:journals/corr/abs-1911-03429}, \cite{DBLP:journals/corr/abs-1905-04610}, \cite{DBLP:journals/corr/abs-1904-11829}, \cite{nguyen-2018-comparing}).  This line of works asks what will happen if we "remove" these features from the input strategically?  what will happen to model predictions?, if we remove from most to least important, ranked from the explanations) we will probably see degradation. This can be evaluated by a certain metric. On the other we can ask the opposite question what will happen if we remove the least important features ? can the model sustain it's merits ? until what percentage of the input is removed ? \\
+
+By comparing the degradation or robustness of a certain model we can compare different interpretability method attributes, if explanations from one method "broke" the model quicker in a sense this method is better and vice versa if we were able to sustain accuracy or other performance metrics of a model when removing least important features from explanations ranks. Motavon et al. \cite{DBLP:journals/corr/MontavonSM17} coined this desired property as \textit{Explanation Selectivity}.\\
+
+Samec et al. \cite{https://doi.org/10.48550/arxiv.1509.06321} have devised an input perturbation process called \textit{most relevant first}, abbreviated MoRF for the trained model $f(x)$. In this process we remove information from the input by setting the coordinates (or a region of surrounding pixels e.g. $9 \times 9$ neighborhood) to a uniform distribution. MoRF process is done by the individual attribution ranking $e$ of a given input $x$, this is done for $L$ iterations:
+\begin{align*}
+	x_{\text{MoRF}}^{(0)} & = x  \\ 
+	\forall 1 \le k \le L \quad x_{\text{MoRF}}^{(k)} &= \text{Remove} (x_{\text{MoRF}}^{(k-1)}, e)	
+\end{align*}
+The metric used is the area over the MoRF perturbation curve (AOPC):
+\begin{align*}
+	\text{AOPC} = \Braket{	\sum_{k=0}^{L}f(x) -f(x_{\text{MoRF}}^{(k)})}_{p(x)}
+\end{align*}
+Where $\Braket{\cdot}_{p(x)}$ means we average over all inputs in the data set, a larger AOPC means a sharper decrease of the MoRF process ($f(x_{\text{MoRF}}^{(k)})$) thus a better feature importance for the attribution-based explanation. \\
+
+The opposite approach then is the perturbation process \textit{least relevant first}, abbreviated LeRF. The proposed metric is the area between th perturbations curves:
+\begin{align*}
+	\text{ABPC} = \Braket{	\sum_{k=0}^{L}f(x_{\text{LeRF}}^{(k)}) -f(x_{\text{MoRF}}^{(k)})}_{p(x)}
+\end{align*}
+In this case the LeRF process needs to sustain the information as much a possibles thus \textbf{larger} area is wanted.\\
+
+In \cite{DBLP:journals/corr/abs-2003-07631} and \cite{LRP} to evaluate and compare different interpretability method "pixel-flipping" was used.  Arras et el. \cite{DBLP:journals/corr/ArrasHMMS16a} also used LRP evaluation and simply "deleted" word for their model into by setting the corresponding word embedding to zero in order, Lundberg et al. using different strategies on how to remove the input features \cite{DBLP:journals/corr/abs-1905-04610} for evaluations explanations for Tree-based machine learning models. \\
+
+Hooker et al.  \cite{https://doi.org/10.48550/arxiv.1806.10758} opine that any removal of information from the input is disruptive since the metrics will be used on modified input that is not from the data set original distribution, thus the generalization errors of "out of sample" inputs for the model becomes dominant. \\
+
+To mitigate this case \cite{https://doi.org/10.48550/arxiv.1806.10758} presented a training strategy, RemOve and Retrain (ROAR). This ensures that the metric used, which in the case was a simple test-set accuracy, is used in sample from the distrubution the model was trained on. The opposite approach was to Keep And Retrain (KAR). In this approach, \textbf{minimizing} degradation to test-set accuracy is desirable\\
+
+DeYoung et al. \cite{DBLP:journals/corr/abs-1911-03429} used a similar approach in NLP explanations, called rationales in the NLP jargon, evaluation benchmark. \cite{DBLP:journals/corr/abs-1911-03429} proposed ERASER, which stands for \textbf{E}valuation \textbf{R}ationales \textbf{A}nd \textbf{S}imple \textbf{E}nglish \textbf{R}easoning, a framework that utilized the metric of AOPC (among others metrics) with the only exception that re-training is not necessary since the input size for the model (BERT \cite{devlin-etal-2019-bert}) can vary so removing tokens (input features) can be done seamlessly.  \\
+
+Chefer et al. \cite{DBLP:journals/corr/abs-2012-09838} used the ERASER framework for the NLP domain and the "removing" pixels for the vision domain in their evaluation of interpretability methods of self-attentions transformers. In both cases, the metric used was the area-under-the-curve (AUC) perturbation process. 
+
+\newpage
+\subsection{Interpretability as a debug tool framework}
+
+Another line of study is to let the interpretability method to be a debug tool for the model or training process itself (\cite{https://doi.org/10.48550/arxiv.1810.03292}, \cite{DBLP:journals/corr/abs-2011-05429}). If an interpretability method is sensitive to a model that trained or tested in an ill manner compared to a model that was trained in a nominal way it means that it can better explain the model and in a way could be a sanity check for the interpretability method itself. \\
+
+Adebayo et al. \cite{https://doi.org/10.48550/arxiv.1810.03292} proposed 2 test frameworks: 
+\begin{enumerate}
+	\item \textit{Model parameter randomization test}: Apply attributions-based method on a trained model and on the same architecture but on a randomly initialized untrained model.
+	\item \textit{Data randomization test}: Apply attributions-based method on a trained model and on a copy of the mode trained on a copy of the data set in which all labels were randomly permuted.
+\end{enumerate}
+
+\textit{Model parameter randomization} tests whether attributions method outputs differ substantially between the 2 models, if the output are similar it means the method is insensitive to model parameters which in a sense does not bode well to the explanation goals which are to understand why did the model made its prediction. It's important to note that the randomization of the model parameters was done in a cascading fashion from top to bottom layers. \\
+
+\textit{Data randomization} tests again as before the difference between the 2 models, An insensitivity to the permuted labels reveals that the method does not depend on the relationship between input and labels which is not a desired property for an attribution-based method. \\
+
+\cite{https://doi.org/10.48550/arxiv.1810.03292} used visualization to show the the differences in the attributes, but also used more rigorous ways namely \textit{similarity metrics} as follows:
+\begin{enumerate}
+	\item Spearman rank correlation with / without  absolute value.
+	\item Structural similarity index measure (SSIM \cite{1284395}).
+	\item Pearson correlation of the histogram of gradients (HOGs)
+\end{enumerate}
+
+In his later work Abedeyo et al. \cite{DBLP:journals/corr/abs-2011-05429} used a more elaborate scheme for tampering with the data-set, the training or evaluation process itself, simply named "bugs":
+\begin{enumerate}
+	\item \textit{Data contamination bugs} 
+	\begin{enumerate}
+		\item \textit{Labeling errors} - Incorrectly labeled data , Similar to previous work.
+		\item \textit{Spurious Correlation} - Make the model associate uncorrelated reason to the task, e.g. blue sky backgrounds with the bird class. 
+	\end{enumerate}
+	\item \textit{Model contamination bugs} - re-initialization of model weights, similar to previous work.
+	\item \textit{Test-time contamination bugs} - Out of distribution (OOD) samples, domain shift for the data-set. 
+\end{enumerate}
+
+\textit{Spurious bug implementation} was implemented by placing all birds onto one of the sky backgrounds and all dogs onto a bamboo forest background. Logically, explanations on a model that was trained on a data-set like this would identify this correlation i.e. attributing most of the background pixels to the class prediction. In a sense this is a ground truth for the explanation output itself and a "debug" tool for the attribution method.\\
+
+\textit{Test-time contamination bugs} assess the ability of attributions to diagnose domain shift, e.g. the attribution for an MNIST input from a model trained on MNIST, to an attribution for the same input but derived from an output of a model trained on a different data-set. \\
+
+
+The metric used for the attributes is SSIM to compare the similarity between the explanation in the aforementioned tests.\\
+
+
+Heo et al. \cite{DBLP:journals/corr/abs-1902-02041} suggested a quantitative metric in similar spirit, \textit{Fooling Success Rate} (FSR). FSR measures how much an interpretability method is prone in adversarial manipulations in the tested model parameters without changing its accuracy in context of giving sound and reasonable explanations.    
+
+\newpage
+
+
+\subsection{Human subject study}
+
+Incorporating  human study for evaluation of interpretability  methods is a very natural (\cite{DBLP:journals/corr/abs-2011-05429}, \cite{DBLP:journals/corr/abs-2005-01831}, \cite{DBLP:journals/corr/RibeiroSG16}).  The explanations coming out of these methods are meant to make black-box machine learning in a sense more understandable and human comprehensible. \\
+
+Adebayo et al. \cite{DBLP:journals/corr/abs-2011-05429} conduct a 54-person study to assess whether end-users can recognize the bugs in the tests according to the attributions . Evidently this approach showed the people are more biased towards the model predictions even in the presence of its attributions. \\
+
+Hase et al. \cite{DBLP:journals/corr/abs-2005-01831} tried to test \textit{simulatability} on interpretability methods for machine learning models. A model is simulatable when a person can predict
+its behavior on new inputs. For this task \cite{DBLP:journals/corr/abs-2005-01831}  conducted a two-fold 39-person human-subject study:
+\begin{enumerate}
+	\item \textit{Forward simulation} - given an input and an “explanation,” users must predict what a model would output for the given input 
+	\item \textit{Counterfactual simulation} - are given an input, a model’s output for that input, and an “explanation” of that output, and then they must predict what the model will output when given a perturbation of the original input.
+\end{enumerate}
+
+\newpage
+\subsection{Axiomatic approach framework}
+
+In this section we'll present the approach of desired properties which attribution-based interpretability ought to have. These properties are mostly common sense and stem from a more theoretical thought process when devising a scheme for an attribution method hence we call them \textit{axioms} in this context. \\ 
+
+Although these \textit{axioms} are not comparable between methods per se they're still worth to mentioned as it can a used as a rigorous framework to evaluate these methods and some can become more quantifiable in a sense as we'll explain later in this section. \\
+
+\subsubsection{Sensitivity, implementation invariance, linearity and Symmetry preserving}
+
+Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} introduced these axioms in his novel attributed-based method \textit{integrated gradients}:
+\begin{itemize}
+	\item \textit{Sensitivity} -  If the function implemented by the deep network does not depend (mathematically) on some variable, then the attribution to that variable is always zero.
+	\item \textit{Implementation invariance} - Attributions should be identical for two functionally equivalent networks.
+	\item \textit{Linearity} - Attributions method should preserve any linearity within the network.
+	\item \textit{Symmetry preserving} - If 2 inputs to the network are symmetrical $F(x,y)=F(y,x)$, so should be their corresponding attributions. 
+\end{itemize}
+
+\subsubsection{Continuity}
+Montavon et al \cite{DBLP:journals/corr/MontavonSM17} introduced the desired axiomatic property of \textit{continuity} as follows:
+\begin{itemize}
+	\item \textit{Continuity} - If two data points are nearly equivalent, then the explanations of their predictions should also be	nearly equivalent.
+\end{itemize}
+
+This axiom can be also quantified as follows, denote an attribution method $E$, two inputs $x,x'$ and their explanations respectively $E,E'$ :
+\begin{align*}
+	\underset{x \ne x'}{\text{max}} \frac{\| E-E'\|_1}{\| x-x'\|_2}
+\end{align*}
+
+Bhatt et al.  \cite{DBLP:journals/corr/abs-2005-00631}  used a similar definition but used the term \textit{low/average sensitivity}
+\subsubsection{Input invariance}
+
+Kindermans et al. \cite{https://doi.org/10.48550/arxiv.1711.00867} introduced the \textit{Input invariance} axiom:
+\begin{itemize}
+	\item \textit{Input invariance} - The attribution-based method should mirror the sensitivity of the model with respect to transformations of the input
+\end{itemize}
+
+For example a constant shift in the input with two model that were trained on the original data and the shifted data and have the \textbf{same predictions} should have the \textbf{same attributions}. \\
+
+\subsubsection{Monotonicity}
+
+Although \textit{monotonicity} defined as metric in \cite{DBLP:journals/corr/abs-2007-07584} it stems from an axiomatic approach on the mechanism of attribution methods that assign an importance value to each feature. From a more theoretical approach a more concrete metric was proposed namely \textit{monotonicity}. \\
+
+Nguyen et al. \cite{DBLP:journals/corr/abs-2007-07584}  posit that feature importance rank attributions should follow a desired property, denote the explanation $E_i$ for feature $i \in [N], y^* = f(\mathbf{x}^*)$:
+\begin{align*}
+	|E_i| \propto \mathbb{E}(l(y^*, f_i)|\mathbf{x}^*_{-i}) = \int_{\mathcal{X}_i} l(y^*, f_i(x_i)p(x_i) d x_i
+\end{align*}
+
+Where $l$ is the loss function, density probability function for feature $x_i$ is $p(x_i)$ and $f_i$ is the restriction of the function $f$ to the feature $i$ obtained by fixing the other features at the values $\mathbf{x}^{*}_{-i} = (x_1, ..., x_{i-1}, x_{i+1} , ... , x_{N})$, so the monotonicity metric for attribution $E$ is defined as the Spearman’s
+correlation coefficient $\rho_{S}$:
+\begin{align*}
+	&\mathbf{e} = [|E_1|, ..., |E_i|,..., |E_N|] \\
+	&\mathbf{f}  =  [\mathbb{E}(l(y^*, f_1)|\mathbf{x}^*_{-1}), ..., \mathbb{E}(l(y^*, f_i)|\mathbf{x}^*_{-i}) ,..., \mathbb{E}(l(y^*, f_N)|\mathbf{x}^*_{-N})] \\
+	&\text{monotonicity}(E,f, \mathbf{x}^*,y^*)   = \rho_{S}(\mathbf{e}, \mathbf{f})
+\end{align*}
+
+
+\subsubsection{Completeness and sensitivity-n}
+Sundararajan et al. \cite{DBLP:journals/corr/SundararajanTY17} proved that the attribution-based method \textit{itegrated gradients} holds the axiom of \textit{completeness}:
+\begin{align*}
+	&\sum_{i=1}^N IG(\mathbf{x}) = f(\mathbf{x})-f(\mathbf{x}')
+\end{align*}
+
+Where $\mathbf{x}'$ is a baseline input that is used for the attribution calculation and we'll be elaborated in later sections.  
+
+Ancona et al. \cite{https://doi.org/10.48550/arxiv.1711.06104} generalized the \textit{completeness} axioms namely, \textit{sensitivity-n}:
+\begin{itemize}
+	\item \textit{sensitivity-n}: For any subset of features of cardinality $n$ , $\mathbf{x}_s= [x_1, ...,x_n] \subseteq \mathbf{x} $ it holds $\sum_{i=1}^n E_i = f(\mathbf{x})- f(\mathbf{x}_{[\mathbf{x}_S =0]})$ 
+\end{itemize}
+
+It easy to see that \textit{completeness} axiom is a private case of the \textit{sensitivity-n} axiom when $n=N$. Bhatt et al. \\
+
+\cite{DBLP:journals/corr/abs-2005-00631}  introduced a similar notion of \textit{faithfulness} where the sum of the attributions and the difference in output when setting those features to a reference baseline should be proportionality correlated
+
+\newpage
+
 \section{Recognized gap}
 
 There seems to be a knowledge gap on how to effectively evaluate and validate any given interpretability method. \textcolor{red}{elaborate more }
@@ -519,6 +595,8 @@ where the superscripts $d$ and $h$ refer to the number of input features and num
 \chapter{Discussions} 
 
 \chapter{Conclusions} 
+
+\textcolor{red}{Maybe write about Integrated Hessians}	 \cite{DBLP:journals/corr/abs-2002-04138}
 
 
 

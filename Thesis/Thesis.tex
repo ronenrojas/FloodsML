@@ -34,13 +34,16 @@
 
 
 \title{
-	{Interpretability evaluation framework: \\ Aspects in Machine learning and hydrology domain applications}\\
+	{Lab report - Interpretability evaluation framework: \\ Aspects in Machine learning and hydrology domain applications}\\
 	{\large School of Computer Science and Engineering - 
 		Institute of Earth Sciences}\\
-	{\large Hebrew University}
+	{\large Hebrew University} \\
+	
 }
-\author{Ronen Rojas}
-\date{October 2022}
+\author{ 
+	{Ronen Rojas}
+}
+\date{September 2023}
 
 
 \begin{document}
@@ -49,41 +52,35 @@
 \tableofcontents
 \newpage
 
-\chapter{Abstract} 
-
-\textcolor{red}{Short overview, write this at the end.}
-
-
 
 \newpage
 \chapter{Introduction} 
 
-In recent years machine learning models became the "go-to" solution for almost every task of estimation or prediction. It has Replaced the somewhat tedious task of trying to manually extract insights from the data.\\
+In recent years, machine learning models have become the standard tool for almost every task of estimation, prediction, and classification. Machine learning models learn for themselves what the important features in the data are by an optimization process called training. This training process has replaced the tedious task of manually extracting insights from the data .\\
 
-It is definitely easier in a sense to let the computer "learn" from the data whatever it needs, all you need is a strong GPU and good clean data, once you've got all your ducks in a row you're good to go. The performance of these kind of models is unprecedented and outperform humans on specific tasks (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}, \cite{DBLP:journals/corr/MnihKSGAWR13}, \cite{Silver_2016}).\\
+The immense progress in tools, software packages, and hardware enhancements has made machine learning widely accessible. All that is needed is a strong computational framework and good, clean data. The performance of these kinds of machine learning efforts is unprecedented and they outperform humans on various tasks (\cite{he2015deep}, \cite{DBLP:journals/corr/abs-1805-01890}, \cite{DBLP:journals/corr/abs-1905-01392}, \cite{DBLP:journals/corr/MnihKSGAWR13}, \cite{Silver_2016}).\\
 
-But with great power comes great responsibility, how do we explain a model prediction in a sensible manner. Most models are considered to be \textit{"black boxes"} and humanly incomprehensible. Given a machine learning model we are now interested more on "why" and less on "what" and most of the time a simple accuracy metric is not enough . This fact gave rise to significant development in the field interpretability methods (\cite{molnar2019}, \cite{electronics10050593}, \cite{DBLP:journals/corr/abs-2012-14261}, \cite{DBLP:journals/corr/abs-1802-00614}, \cite{DBLP:journals/corr/abs-2003-07631}, \cite{DBLP:journals/corr/abs-2007-15911}, \cite{samek2019explainable}, \cite{DBLP:journals/corr/abs-2012-15445}). \\
+However, with great power comes great responsibility (as they say). How do we explain a model prediction in a sensible manner? Most machine learning models are considered to be \textit{"black boxes"} and humanly incomprehensible. When considering a trained machine learning model we are now interested more in "why" it predicted something and less in "what" it predicted. This shift has given rise to significant developments in the field of interpretability methods (\cite{molnar2019}, \cite{electronics10050593}, \cite{DBLP:journals/corr/abs-2012-14261}, \cite{DBLP:journals/corr/abs-1802-00614}, \cite{DBLP:journals/corr/abs-2003-07631}, \cite{DBLP:journals/corr/abs-2007-15911}, \cite{samek2019explainable}, \cite{DBLP:journals/corr/abs-2012-15445}). \\
 
-Interpretability tries to tackle this issue and tries to answer these lines of questions:
+Interpretability tackles the issue of trying to gain more insight of the prediction mechanism of the model. It also tries to answer the following questions:
 \begin{itemize}
-	\item \textit{Why did the model made that prediction?}	
+	\item \textit{Why did the model made the prediction?}	
 	\item \textit{Do we have a human-friendly explanation for this prediction?}	
 	\item \textit{Can we visualize this explanation? }	
 \end{itemize}
 
-Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach (\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}, \cite{DBLP:journals/corr/MontavonSM17}, \cite{https://doi.org/10.48550/arxiv.1711.00867}),  while some do so from a visualization perspective \cite{DBLP:journals/corr/abs-1802-00614}. Even though visualization results can be insightful to humans, such evaluations frameworks are not objectives and time consuming.\\ 
+Some interpretability methods try to tackle the idea of "why?" instead of "what?" from an axiomatic approach (\cite{DBLP:journals/corr/SundararajanTY17}, \cite{DBLP:journals/corr/abs-2111-07668}, \cite{DBLP:journals/corr/MontavonSM17}, \cite{https://doi.org/10.48550/arxiv.1711.00867}). Some do so from a visualization perspective (\cite{DBLP:journals/corr/abs-1802-00614}, \cite{DBLP:journals/corr/ZhouKLOT15}, \cite{DBLP:journals/corr/ZeilerF13}, \cite{DBLP:journals/corr/SelvarajuDVCPB16}). Even though visualization results can be insightful to humans, such evaluations are not objective and might contain biases.\\ 
 
+There are evaluation frameworks that try to quantify how good an interpretability method is (\cite{DBLP:journals/corr/abs-1912-01451}, \cite{https://doi.org/10.48550/arxiv.1509.06321} \cite{https://doi.org/10.48550/arxiv.1806.10758} \cite{DBLP:journals/corr/MontavonSM17},\cite{LRP},  \cite{DBLP:journals/corr/ArrasHMMS16a}). But since evaluation of interpretability methods can get convoluted and untrustworthy, it is difficult to define a good explanation. As there is no ground truth for that, there is no right or wrong answer to this conundrum. \\ 
 
-Evaluation of interpretability methods is somewhat convoluted and sometimes untrustworthy \cite{DBLP:journals/corr/abs-1912-01451}, how does someone define a good explanation? Clearly since there is no ground truth for that there is no right nor wrong, at the end of the day some methods are better then others on different types of models and different types of data-set. \\ 
-
-This is the main motivation this research,  refinement and exploration of the notion on how can we understand better our interpretability methods and their limitations, how can we evaluate then in a more concrete manner. Can we expand it to a more scientific domain e.g. Hydrology and use some human ground expertise to achieve that. 
+Evaluation of interpretability methods is the main motivation for this research. In this paper I will detail methods for refinement and exploration of better understanding our interpretability methods and their limitations. I will evaluate the interpretability methods in a concrete manner and apply them to the scientific domain of hydrology.
 
 
 \newpage
 
 \chapter{Literature review} 
 
-In this chapter we will review interpretability methods that gained popularity in recent years. We will also review frameworks of evaluating interpretability methods and what evaluation metrics were used. . We'll constrain the scope of this work only to model attribution-based explanations \cite{electronics10050593}, these kind of explanations are local and post-hoc i.e., given a trained model and an input for the prediction, attribution measures or ranks each input feature to explain the model's prediction. \\
+In this chapter I will review interpretability methods that have gained popularity in recent years. I will also review frameworks of evaluating interpretability methods and what evaluation metrics are used. I will constrain the scope of this work only to model attribution-based explanations \cite{electronics10050593}, these kind of explanations are local and post-hoc i.e., given a trained model and an input for the prediction, attribution measures or ranks each input feature to explain the model's prediction. \\
 
 \section{What is an attribute?}
 Formally, if we have a model that was trained to perform a specific task:
@@ -197,25 +194,34 @@ The mechanism used pre-defined rules for each type of non-linearity and layer ty
 Both LRP and DeepLIFT have gained the nickname  \textit{discrete gradient methods} \cite{DBLP:journals/corr/abs-2012-14261}.
 
 \subsection{Feature Ablation}
-   A perturbation based approach to computing attribution, replacing each input feature $x_i$ with a given baseline $x'_i$, and computing the difference in output. 
-   
-\subsection{Guided Grad CAM}
-Computes element-wise product of guided backpropagation attributions with upsampled (non-negative) GradCAM attributions. GradCAM attributions are computed with respect to the layer provided in the constructor, and attributions are upsampled to match the input size. GradCAM is designed for convolutional neural networks, and is usually applied to the last convolutional layer.
-
-Note that if multiple input tensors are provided, attributions for each input tensor are computed by upsampling the GradCAM attributions to match that input’s dimensions. If interpolation is not possible for the input tensor dimensions and interpolation mode, then an empty tensor is returned in the attributions for the corresponding position of that input tensor. This can occur if the input tensor does not have the same number of dimensions as the chosen layer’s output or is not either 3D, 4D or 5D.
-
-Note that attributions are only meaningful for input tensors which are spatially alligned with the chosen layer, e.g. an input image tensor for a convolutional layer.
-\textcolor{red}{Short paragraph about Guided Grad CAM}\cite{DBLP:journals/corr/SelvarajuDVCPB16}
-
+A perturbation based approach to computing attribution, replacing each input feature $x_i$ with a given baseline $x'_i$, and computing the difference in output. 
 
 \subsection{Deconvolution}
-Computes attribution using deconvolution. Deconvolution computes the gradient of the target output with respect to the input, but gradients of ReLU functions are overridden so that the gradient of the ReLU input is simply computed taking ReLU of the output gradient, essentially only propagating non-negative gradients (without dependence on the sign of the ReLU input).
-\textcolor{red}{Short paragraph about Deconvolution}\cite{DBLP:journals/corr/ZeilerF13} \cite{10.1007/978-3-319-46466-4_8}
+
+Deconvolution \cite{DBLP:journals/corr/ZeilerF13} computes the gradient of the target output with respect to the input, but instead of using the gradients of ReLU functions it is computed taking ReLU of the output gradient, essentially only propagating non-negative gradients \cite{10.1007/978-3-319-46466-4_8}.
+
+
+\subsection{Guided backpropagation}
+
+Guided backpropagation is a slight varient of the Deconvolution method \cite{https://doi.org/10.48550/arxiv.1412.6806}. The difference is mainly how the gradients of non-linearties are  being calculated. The method adds an additional guidance signal from the higher layers to the usual backpropagation, this in turn prevents backward flow of negative gradients.
+
+\subsection{CAM}
+
+Class Activation Mapping \cite{DBLP:journals/corr/ZhouKLOT15}, CAM in short, is an attribution method which tries to estimate the importance of each unit in the feature maps i.e. the rectified result of the convolutional by using global average pooling (GAP) in CNNs.\\
+
+Since the feature maps have a lower resolution the activation maps are up-sampled, usually the last convolutional is the one that is considered for the attribution.
+
+\subsection{Guided Grad CAM}
+
+Gradient-weighted Class Activation Mapping \cite{DBLP:journals/corr/SelvarajuDVCPB16}, in short Guided Grad CAM, combines two methods.
+Guided Grad CAM Computes element-wise product of guided backpropagation attributions with upsampled (non-negative) GradCAM attributions:
+\begin{align*}
+	E_\text{Guided Grad CAM}(f, x)  = E_\text{Guided Backprop}(f, x) \odot E_\text{CAM}(f, x)
+\end{align*}
 
 \subsection{Lime}
-\textcolor{red}{Short paragraph about Lime} \cite{DBLP:journals/corr/RibeiroSG16}
 
-
+Local Interpretable Model-agnostic Explanations \cite{DBLP:journals/corr/RibeiroSG16} (LIME). This method trains an interpretable surrogate model around the input example and using model evaluations at these points to train a simpler interpretable ‘surrogate’ model, for example a linear model.
 
 \newpage
 
@@ -293,9 +299,6 @@ In his later work Abedeyo et al. \cite{DBLP:journals/corr/abs-2011-05429} used a
 
 
 The metric used for the attributes is SSIM to compare the similarity between the explanation in the aforementioned tests.\\
-
-
-Heo et al. \cite{DBLP:journals/corr/abs-1902-02041} suggested a quantitative metric in similar spirit, \textit{Fooling Success Rate} (FSR). FSR measures how much an interpretability method is prone in adversarial manipulations in the tested model parameters without changing its accuracy in context of giving sound and reasonable explanations.    
 
 \newpage
 
@@ -388,16 +391,41 @@ It easy to see that \textit{completeness} axiom is a private case of the \textit
 
 \newpage
 
+\subsection{Adversarial framework}
+
+Adversarial framework is a well researched subject for finding vulnerabilities in neural networks performance. Adversarial framework for interpretability methods asks whether the method at hand can be fooled via some sort of manipulation. Although some adversarial techniques did not quantify numerically how an interpretability method is susceptible to a specific attack it is rather important to mention this framework as they give some notion of robustness to the methods.\\
+
+Heo et al. \cite{DBLP:journals/corr/abs-1902-02041} showed that LRP, Grad-CAM, and simple saliency map , can be easily fooled with model manipulation. They also suggested a quantitative metric , \textit{Fooling Success Rate} (FSR). FSR measures how much an interpretability method is prone to aforementioned adversarial manipulation.\\
+
+
+Slack et al. \cite{DBLP:journals/corr/abs-1911-02508} proposed a novel scaffolding technique that hides classifier biases by allowing an adversarial entity to craft an arbitrary desired explanation for the LIME and methods. Dombrowski et al. \cite{https://doi.org/10.48550/arxiv.1906.07983} exploited certain geometrical properties of neural
+networks to manipulate an explanation arbitrarily with hardly perceptible differences in the input.
+
+\newpage
 \section{Recognized gap}
 
-There seems to be a knowledge gap on how to effectively evaluate and validate any given interpretability method. \textcolor{red}{elaborate more }
+Many frameworks tackle tasks like images classification and NLP tasks. They also use popular widely researched existing data sets. I recognized a twofold gap:
+\begin{enumerate}
+	\item There is no attempt to extract more than the perceived feature importance of the data and model prediction in a method
+	\item There is no attempt to utilize and evaluate interpretability methods in hydrological setup.
+\end{enumerate}
 
+In a sense I want to know whether the interpretability method was able to gain some more insights from the data, for instance some hidden modalities in the data and labels that are more easily perceived with the explanations rather then the data or can be learned with fewer samples. \\
 
+The incentive of using hydrological domain, is that sometimes the explanation of a trained model can reveal a pattern that even expert judgment could not. Also incorporating machine learning models in general is sparse so it is rather interesting to explore and evaluate the use of these models for regression task in hydrology. \\
 
+\newpage
 \chapter{Research objective } 
 
-We offer a framework for evaluating an interpretability method. Our approach can be summarized in
-the following scheme \ref{scheme}:
+In this report I will present a novel framework for evaluating an interpretability method. In this framework I will try to see if inside the explanations there is more than meets eyes. \\
+
+I will ingrain the data set with different sets of scenarios that adhere to a general mechanism, this is the way to generate the data-label distribution. But also the process will insure that the different scenarios will create different characteristics that are not so noticeable in the data itself but rather apparent in their counterpart explanations. I will quantify the contrast between these different point of views. \\
+
+These scenarios characteristics can be perceived differently in different method of attributes. it can be easily compared by devising a classification tasks for the scenarios and compare attribution methods.\\
+
+Taking advantage of the fact that the attributes of model and the inputs for the model have the same dimensions, one can devise two type classifiers that have almost the same architecture. One type that uses the real data and one that uses to explanations. It can be stated that by comparing the two types of the classifiers is comparing  apples to apples so to speak. \\
+
+The aforementioned evaluation approach can be summarized in the following scheme \ref{scheme}:
 \begin{enumerate}
 	\item Generate a 2-modal data-set
 	\item Train a machine learning model on the data-set
@@ -410,56 +438,79 @@ the following scheme \ref{scheme}:
 	with simple classification metrics		
 \end{enumerate}
 \begin{figure}[H]
-	\centering\includegraphics[width=17cm]{scheme.png}
+	\centering\includegraphics[width=16.4cm]{scheme.png}
 	\caption{Scheme}
 	\label{scheme}
 \end{figure}
 \chapter{Data and Models} 
-\section{Data}
+
+\section{Synthetic Data}
+
+Our machine learning model task is to predict the overground runoff from synthetic weather data for precipitation and potential evapotranspiration (PET) inputs. The creation of the data is done in two phases:
+
+\begin{enumerate}
+	\item Inputs - time series of the precipitation and PET
+	\item labels - time series of runoff 
+\end{enumerate}
+ 
+\subsection{Weather Generator}
+
+
+\textcolor{red}{paragraph on how the different scenarios were created and the scientific reasoning behind it}
 \subsection{DREAM}
-\subsection{CARAVAN}
+
 \newpage
 \section{Models}
 \subsection{Feed Forward Neural Network}
+\textcolor{red}{paragraph on DNN for classification}\\
 
-\subsubsection{Neural Network - Introduction}
-\begin{itemize}
-	\item $y = f_{W}(x), x \in \mathbb{R}^n, y \in \mathbb{R}^m$ 
-	\item $W$ Learn-able parameters
-	\item Data set $\{x_i, y_i \}_{i=1}^k$
-	\item Loss function $L(f(x_i), y_i)$
-	\item Gradient decent $W_t = W_{t-1} + \alpha \nabla_{W}L(x,y) $ 
-\end{itemize}
+\textcolor{red}{paragraph Affine layer, activation functions:  sigmoid, Relu, }\\
 
-\begin{figure}[H]\centering\includegraphics[width=6cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
+\textcolor{red}{paragraph about training and backpropogation}\\
 
-\newpage
-\subsubsection{Neural Network - Function definitions}
-\begin{itemize}
-	\item Affine layer $y = Ax + b , x \in \mathbb{R}^n, b, y \in \mathbb{R}^m, A \in \mathbb{R}^{m \times n}$
-	\item Activation point wise
-	\begin{itemize}
-		\item $\sigma_g(z) = \frac{1}{1+e^{-z}}$ - Sigmoid 
-		\item $ReLU(z) = \max(0, z)$  - Rectified linear unit
-	\end{itemize}	
-\end{itemize}
-
-\begin{figure}[H]\centering\includegraphics[width=6cm]{sigmoid.png}\caption{Sigmoid function}\end{figure}
-\begin{figure}[H]\centering\includegraphics[width=6cm]{RELU.png}\caption{ReLU function}\end{figure}
-
-\newpage
-\subsubsection{Neural Network - Layering functions}
-
-\begin{itemize}
-	\item Dense: $y = \sigma(L), L = Ax+b$
-	\item Expressiveness 
-	\item Back propagation - $\frac{\partial y}{ \partial w} =  \frac{\partial y}{ \partial L} \cdot \frac{\partial L}{ \partial w}$
-\end{itemize}
+\textcolor{red}{paragraph different loss function for different tasks, MSE, L1, Cross entropy, regularization, multi-tasking ?}\\
 
 
-\subsubsection{Neural Network - Hyperbolic tangent  function}
-$\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
-\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent function}\end{figure}
+
+
+%\subsubsection{Neural Network - Introduction}
+%\begin{itemize}
+%	\item $y = f_{W}(x), x \in \mathbb{R}^n, y \in \mathbb{R}^m$ 
+%	\item $W$ Learn-able parameters
+%	\item Data set $\{x_i, y_i \}_{i=1}^k$
+%	\item Loss function $L(f(x_i), y_i)$
+%	\item Gradient decent $W_t = W_{t-1} + \alpha \nabla_{W}L(x,y) $ 
+%\end{itemize}
+
+%\begin{figure}[H]\centering\includegraphics[width=6cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
+
+%newpage
+%\subsubsection{Neural Network - Function definitions}
+%\begin{itemize}
+%	\item Affine layer $y = Ax + b , x \in \mathbb{R}^n, b, y \in \mathbb{R}^m, A \in \mathbb{R}^{m \times n}$
+%	\item Activation point wise
+%	\begin{itemize}
+%		\item $\sigma_g(z) = \frac{1}{1+e^{-z}}$ - Sigmoid 
+%		\item $ReLU(z) = \max(0, z)$  - Rectified linear unit
+%	\end{itemize}	
+%\end{itemize}
+
+%\begin{figure}[H]\centering\includegraphics[width=6cm]{sigmoid.png}\caption{Sigmoid function}\end{figure}
+%\begin{figure}[H]\centering\includegraphics[width=6cm]{RELU.png}\caption{ReLU function}\end{figure}
+
+%newpage
+%\subsubsection{Neural Network - Layering functions}
+
+%\begin{itemize}
+%	\item Dense: $y = \sigma(L), L = Ax+b$
+%	\item Expressiveness 
+%	\item Back propagation - $\frac{\partial y}{ \partial w} =  \frac{\partial y}{ \partial L} \cdot \frac{\partial L}{ \partial w}$
+%\end{itemize}
+
+
+%\subsubsection{Neural Network - Hyperbolic tangent  function}
+%$\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
+%\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent %function}\end{figure}
 
 
 
@@ -467,62 +518,68 @@ $\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
 \subsection{RNN}
 
 \subsubsection{RNN - Introduction}
-\begin{itemize}
-	\item Signals with timestamp (time series) - $\{x_t, y_t \}_{t=1}^k$
-	\item Hidden state - $h_t = f_{W}(x_t, h_{t-1})$
-	\item Same weights $W$ for each step
-	\item Popular in Natural Language Processing (NLP)
-\end{itemize}
-\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN.png}\caption{RNN}\end{figure}
+\textcolor{red}{paragraph on RNN definition}\\
+
+\textcolor{red}{paragraph on RNN drawbacks in training}\\
 
 
-\subsubsection{RNN - Multi-Layer}
-\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN_MULTI.png}\caption{RNN - MultiLayer}\end{figure}
-\begin{align*}
-	h_t^{layer} = \sigma_h \bigg(W^{layer} \begin{pmatrix}
-		h_{t}^{layer-1} \\ h_{t-1}^{layer}
-	\end{pmatrix} \bigg)
-\end{align*}
+%\begin{itemize}
+%	\item Signals with timestamp (time series) - $\{x_t, y_t \}_{t=1}^k$
+%	\item Hidden state - $h_t = f_{W}(x_t, h_{t-1})$
+%	\item Same weights $W$ for each step
+%	\item Popular in Natural Language Processing (NLP)
+%\end{itemize}
+%\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN.png}\caption{RNN}\end{figure}
+
+
+%\subsubsection{RNN - Multi-Layer}
+%\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN_MULTI.png}\caption{RNN - MultiLayer}\end{figure}
+%\begin{align*}
+%	h_t^{layer} = \sigma_h \bigg(W^{layer} \begin{pmatrix}
+%		h_{t}^{layer-1} \\ h_{t-1}^{layer}
+%	\end{pmatrix} \bigg)
+%\end{align*}
 
 
 \newpage
-\subsection{LSTM}
+
+\subsubsection{LSTM }
 
 
-\subsubsection{LSTM - Motivation}
 
-LSTM (Long Short Term Memory) is a special kind of RNN,  designed to overcome the limitation of RNN
-\begin{itemize}
-	\item Gradient vanishing and exploding
-	\item Complex training
-	\item Difficulty to processes long sequences 
-\end{itemize}
+\textcolor{red}{paragraph on LSTM motivation, Gradient vanishing and exploding }\\
 
-Remembering information for long periods of time is intrinsic to LSTM.
+%LSTM (Long Short Term Memory) is a special kind of RNN,  designed to overcome the limitation of RNN
+%\begin{itemize}
+%	\item 
+%	\item Complex training
+%	\item Difficulty to processes long sequences 
+%\end{itemize}
 
-\subsubsection{LSTM - Principles}
+%Remembering information for long periods of time is intrinsic to LSTM.
 
-
-\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
-
-\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
-
-\begin{itemize}
-	\item Separate Cell state
-	\item Gate to control flow of information:
-	\begin{itemize}
-		\item \textbf{Forget} - Gets rids of irrelevant information.
-		\item \textbf{Store} - Relevant information from input
-		\item \textbf{Update} - Selectively update cell state
-		\item \textbf{Output}
-	\end{itemize}
-\end{itemize}
+%\subsubsection{LSTM - Principles}
 
 
-\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_GRADIENT_FLOW.png}\caption{LSTM - Gradient flow}\end{figure}
+%\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
+
+%\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
+\textcolor{red}{paragraph on LSTM definition, Cells,  Forget, Store, Update Outputs gates}\\
+%\begin{itemize}
+%	\item Separate Cell state
+%	\item Gate to control flow of information:
+%	\begin{itemize}
+%		\item \textbf{Forget} - Gets rids of irrelevant information.
+%		\item \textbf{Store} - Relevant information from input
+%		\item \textbf{Update} - Selectively update cell state
+%		\item \textbf{Output}
+%	\end{itemize}
+%\end{itemize}
 
 
-\subsubsection{LSTM- Formulation}
+%\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_GRADIENT_FLOW.png}\caption{LSTM - Gradient flow}\end{figure}
+
+
 \begin{align*}
 	f_t &= \sigma_g(W_{f} x_t + U_{f} h_{t-1} + b_f) \\
 	i_t &= \sigma_g(W_{i} x_t + U_{i} h_{t-1} + b_i) \\
@@ -549,30 +606,33 @@ where the superscripts $d$ and $h$ refer to the number of input features and num
 
 
 \subsubsection{LSTM- Multi-cell}
-
+\textcolor{red}{paragraph on LSTM Multi-cell pros and cons}\\
 \begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_MULTI.png}\caption{LSTM - Multi layer cells}\end{figure}
 \subsubsection{LSTM - in context of rainfall}
 
-\begin{itemize}
-	\item 2018
-	\begin{itemize}
-		\item CAMELS - Data set
-		\item 2-Layer LSTM -cells
-		\item Input feature size $d=5$ - prcp(mm/day), srad(W/m2), tmax(C), tmin(C), vp(Pa). 
-		\item Hidden state  size $h=20$
-		\item Dropout rate = $10\%$
-		\item Sequemce length - $365$ days. 
-	\end{itemize} 
-	\item 2019
-	\begin{itemize}
-		\item CAMELS - Data set
-		\item 1-Layer LSTM 
-		\item Input feature size $d=5$ ? 
-		\item Hidden state  size $h=256$
-		\item Dropout rate = $40\%$
-		\item Sequence length - $270$ days. 
-	\end{itemize} 	
-\end{itemize}
+\textcolor{red}{paragraph on recent development of LSTM usage in rainfall / runoff problem, reference Fredrick papers on the CAMELS}\\
+
+\textcolor{red}{paragraph on architectures details, NSE loss, performance}\\
+%\begin{itemize}
+%	\item 2018
+%	\begin{itemize}
+%		\item CAMELS - Data set
+%		\item 2-Layer LSTM -cells
+%		\item Input feature size $d=5$ - prcp(mm/day), srad(W/m2), tmax(C), tmin(C), vp(Pa). 
+%		\item Hidden state  size $h=20$
+%		\item Dropout rate = $10\%$
+%		\item Sequemce length - $365$ days. 
+%	\end{itemize} 
+%	\item 2019
+%	\begin{itemize}
+%		\item CAMELS - Data set
+%		\item 1-Layer LSTM 
+%		\item Input feature size $d=5$ ? 
+%		\item Hidden state  size $h=256$
+%		\item Dropout rate = $40\%$
+%		\item Sequence length - $270$ days. 
+%	\end{itemize} 	
+%\end{itemize}
 
 \newpage
 
@@ -584,35 +644,35 @@ where the superscripts $d$ and $h$ refer to the number of input features and num
 \chapter{Results} 
  
 \section{Sanity Check}
+\textcolor{red}{paragraph on the rationale of the example}\\
 
-\section{Dream synthetic model}
+\textcolor{red}{Formulation and figures of the results}\\
 
-\section{CelebA data set}
+\textcolor{red}{paragraph on explaining the results}\\
+\newpage
+\section{Dream synthetic Framework}
+\subsection{Dream synthetic model}
+\textcolor{red}{Figures and explanation of the Rainfall runoff data}\\
 
-\section{Caravan Data set}
+\textcolor{red}{Paragraph on how the 2 scenarios are distinguished from each other }\\
 
+\textcolor{red}{Paragraph on how the LSTM was trained, event-driven, MSE and NSE}\\
 
-\chapter{Discussions} 
+\textcolor{red}{Figures and explanation of several events prediction Vs. label}\\
+\subsection{Interpretability method}
+
+\textcolor{red}{Paragraph on how what methods were used and what were the considerations or constraints}\\
+
+\subsection{Framework evaluation results}
+\textcolor{red}{Figures and explanation of the metric used, the process in which they were evaluated and the actual results on each method, lots of comparisons!}\\
 
 \chapter{Conclusions} 
+\textcolor{red}{TBD}\\
+\chapter{Discussions} 
 
+
+\textcolor{red}{TBD}\\
 \textcolor{red}{Maybe write about Integrated Hessians}	 \cite{DBLP:journals/corr/abs-2002-04138}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 \newpage
 

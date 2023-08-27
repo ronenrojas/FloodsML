@@ -15,4 +15,10 @@ LabReport/*.pdf
 .idea/
 .vscode/
 __pycache__/
-exp-hydro/.vs/
+*/exp-hydro/.vs/
+*.docx
+*.csv
+*.cvs
+*.in
+*out.txt
+*rundir

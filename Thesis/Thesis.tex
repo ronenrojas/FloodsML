@@ -26,6 +26,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{braket}
+\usepackage{booktabs}
 \graphicspath{ {images/}}
 \usepackage[style=numeric]{biblatex}
 \addbibresource{thesis.bib}
@@ -449,20 +450,62 @@ The aforementioned evaluation approach can be summarized in the following scheme
 Our machine learning model task is to predict the overground runoff from synthetic weather data for precipitation and potential evapotranspiration (PET) inputs. The creation of the data is done in two phases:
 
 \begin{enumerate}
-	\item Inputs - time series of the precipitation and PET
-	\item labels - time series of runoff 
+	\item Weather Generator (Inputs) - daily time series of the precipitation $\Big[\frac{mm}{day}\Big]$ and PET $\Big[\frac{mm}{day}\Big]$.
+	\item DREAM (labels) - daily time series of runoff $\Big[\frac{mm}{day}\Big]$.
 \end{enumerate}
  
 \subsection{Weather Generator}
+The weather generator is a essentially a Markov chain $\{X_i\}_{i=0}^n, X_i \in \{0,1\}$ where:
+\begin{align*}
+	X_{i|i-1} \sim \begin{cases}
+		\text{Bernoulli}(\delta_1) & X_{i-1} = 0\\
+		\text{Bernoulli}(\delta_2) & X_{i-1} = 1\\
+	\end{cases} 
+\end{align*}
+
+The precipitation daily values are:
+\begin{align*}
+	Y_i = X_i \times Z_i
+\end{align*} 
+
+Where $Z_i \overset{i.i.d}{\sim} \text{Weibull}(\lambda, k)$ and its density function is defined as follows: 
+\begin{equation*}
+	f(x; \lambda, k) = \begin{cases}
+		\frac{k}{\lambda} \left(\frac{x}{\lambda}\right)^{k-1} e^{-(x/\lambda)^k}, & x \geq 0 \\
+		0, & x < 0
+	\end{cases}
+\end{equation*} 
+
+The PET values are drawn $\overset{i.i.d}{\sim} \mathcal{N}(\mu, \sigma^2)$.\\
 
 
-\textcolor{red}{paragraph on how the different scenarios were created and the scientific reasoning behind it}
+For the two modalities of the data set we use different distribution parameters  mode 1 (dry) and mode 2 (wet):
+\begin{table}[ht]
+	\centering
+	\caption{Weather generation parameters}
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Parameter} & \textbf{Mode 1} & \textbf{Mode 2} \\
+		\midrule
+		$\delta_1$ & 0.2 & 0.8 \\
+		$\delta_2$ & 0.5 & 0.8 \\
+		$k$ & 0.5 & 1.5 \\
+		$\mu$ & 3.0 & 3.0 \\
+		$\sigma$ & 1.0 & 1.0 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+$\lambda$ was used as a normalization factor to make the annual mean precipitation equal between the two modes. 
 \subsection{DREAM}
 
+For the runoff model we've used the well established Hydrometeorological daily recharge assessment model (DREAM) \cite{DREAM}.
 \newpage
 \section{Models}
 \subsection{Feed Forward Neural Network}
-\textcolor{red}{paragraph on DNN for classification}\\
+Deep Neural Networks (DNNs) represent a powerful class of machine learning models designed for classification tasks. These networks consist of multiple layers of interconnected nodes, each layer responsible for learning increasingly abstract features from the input data.\\ 
+
+In the context of classification, DNNs can automatically learn to extract relevant patterns and representations from complex data, enabling them to discern intricate relationships within the input features. The process of training involves adjusting the network's parameters through backpropagation, where errors are propagated backward to fine-tune the connections between nodes. DNNs have demonstrated remarkable success in various domains, from image and speech recognition to natural language processing, ushering in transformative advances in automated classification tasks.\\
 
 \textcolor{red}{paragraph Affine layer, activation functions:  sigmoid, Relu, }\\
 
@@ -474,15 +517,31 @@ Our machine learning model task is to predict the overground runoff from synthet
 
 
 %\subsubsection{Neural Network - Introduction}
-%\begin{itemize}
-%	\item $y = f_{W}(x), x \in \mathbb{R}^n, y \in \mathbb{R}^m$ 
-%	\item $W$ Learn-able parameters
-%	\item Data set $\{x_i, y_i \}_{i=1}^k$
-%	\item Loss function $L(f(x_i), y_i)$
-%	\item Gradient decent $W_t = W_{t-1} + \alpha \nabla_{W}L(x,y) $ 
-%\end{itemize}
+\begin{itemize}
+	\item $y = f_{W}(x), x \in \mathbb{R}^n, y \in \mathbb{R}^m$ 
+	\item $W$ Learn-able parameters
+	\item Data set $\{x_i, y_i \}_{i=1}^k$
+	\item Loss function $L(f(x_i), y_i)$
+	\item Gradient decent $W_t = W_{t-1} + \alpha \nabla_{W}L(x,y) $ 
+\end{itemize}
 
-%\begin{figure}[H]\centering\includegraphics[width=6cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=6cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
+
+
+The Support Vector Classifier (SVC) aims to find the optimal hyperplane that separates classes in a binary classification problem. Given a set of training samples $\{(x_1, y_1), (x_2, y_2), \ldots, (x_n, y_n)\}$ where $x_i$ represents the feature vector and $y_i \in \{-1, 1\}$ is the class label, SVC seeks to find the hyperplane defined by:
+
+
+$w \cdot x + b = 0$
+
+
+where $w$ is the weight vector perpendicular to the hyperplane, and $b$ is the bias term. The goal is to maximize the margin, i.e., the distance between the hyperplane and the nearest data points of each class. The optimization problem can be formulated as:
+
+\begin{align*}
+	& \underset{w, b}{\text{minimize}}
+	& & \|w\| \\
+	& \text{subject to}
+	& & y_i(w \cdot x_i + b) \geq 1, \quad i = 1, \ldots, n
+\end{align*}
 
 %newpage
 %\subsubsection{Neural Network - Function definitions}

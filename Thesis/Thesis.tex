@@ -517,10 +517,12 @@ An Affine layer is defined as follows:
 Activation functions:
 \begin{itemize}
 	\item $\sigma_g(z) = \frac{1}{1+e^{-z}}$ - Sigmoid 
-	\item $ReLU(z) = \max(0, z)$  - Rectified linear unit
+	\item $ReLU(z) = \max(0, z)$ - Rectified linear unit
+	\item $\sigma_g(z) = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$ - hyperbolic tangent function 
 \end{itemize}	
 \begin{figure}[H]\centering\includegraphics[width=6cm]{sigmoid.png}\caption{Sigmoid function}\end{figure}
 \begin{figure}[H]\centering\includegraphics[width=6cm]{RELU.png}\caption{ReLU function}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent function}\end{figure}
 
 
 
@@ -569,78 +571,57 @@ RNNS utilis the hidden state to predict the labels $h_t = f_{W}(x_t, h_{t-1})$.\
 \begin{figure}[H]\centering\includegraphics[width=10cm]{RNN.png}\caption{RNN}\end{figure}
 
 
-However, standard RNNs can suffer from vanishing or exploding gradients, limiting their ability to capture long-range dependencies. To overcome these issues, variants like Long Short-Term Memory (LSTM) were developed which will be presented in the next section:
-
+However, standard RNNs can suffer from vanishing or exploding gradients, limiting their ability to capture long-range dependencies. To overcome these issues, variants like Long Short-Term Memory (LSTM) were developed which will be presented in the next section as it will be our main workhorse for the hydrology modeling.
 \newpage
 
 \subsection{LSTM }
 
-LSTM is a special kind of RNN, designed to overcome the short-comes of RNN such as complicated training procedures and  difficulty to processes long sequences. Remembering information for long periods of time is intrinsic to LSTM.
-
+LSTM is a special kind of RNN, designed to overcome the short-comes of RNN such as complicated training procedures and  difficulty to processes long sequences. The architecture of LSTM networks facilitates (as its eponymous name) the learning of both short-term and long-term patterns, remembering information for long periods of time is intrinsic to LSTM.
 
 \subsubsection{LSTM - Principles}
+
+LSTMs has three gating mechanisms: the input gate, forget gate, and output gate. These gates enable selective retention or discard of information over time.\\
+
+Each gate is essentially an Affine transformation followed by a non-linear point wise function:
 \begin{align*}
 	f_t &= \sigma_g(W_{f} x_t + U_{f} h_{t-1} + b_f) \\
 	i_t &= \sigma_g(W_{i} x_t + U_{i} h_{t-1} + b_i) \\
 	o_t &= \sigma_g(W_{o} x_t + U_{o} h_{t-1} + b_o) \\
-	\tilde{c}_t &= \sigma_c(W_{c} x_t + U_{c} h_{t-1} + b_c) \\
+	\tilde{c}_t &= \sigma_h(W_{c} x_t + U_{c} h_{t-1} + b_c) \\
 	c_t &= f_t \circ c_{t-1} + i_t \circ \tilde{c}_t \\
 	h_t &= o_t \circ \sigma_h(c_t)
 \end{align*}
 
-where the initial values are $c_0 = 0$ and $h_0 = 0$ and the operator $\circ$ denotes the Hadamard product (element-wise product). 
-
-\begin{itemize}
-	\item $x_t \in \mathbb{R}^{d}$: input vector to the LSTM unit 
-	\item $f_t \in \mathbb{R}^{h}$: forget gate's activation vector
-	\item $i_t \in \mathbb{R}^{h}$: input/update gate's activation vector 
-	\item $o_t \in \mathbb{R}^{h}$: output gate's activation vector
-	\item $h_t \in \mathbb{R}^{h}$: hidden state vector also known as output vector of the LSTM unit 
-	\item $\tilde{c}_t \in \mathbb{R}^{h}$: cell input activation vector
-	\item $c_t \in \mathbb{R}^{h}$: cell state vector
-	\item $W \in \mathbb{R}^{h \times d}, U \in \mathbb{R}^{h \times h} $ and $b \in \mathbb{R}^{h}$: weight matrices and bias vector parameters which need to be learned during training
-\end{itemize}
-
-where the superscripts $d$ and $h$ refer to the number of input features and number of hidden units, respectively.
-
-
-%\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
-
-%\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
-\textcolor{red}{paragraph on LSTM definition, Cells,  Forget, Store, Update Outputs gates}\\
-%\begin{itemize}
-%	\item Separate Cell state
-%	\item Gate to control flow of information:
-%	\begin{itemize}
-%		\item \textbf{Forget} - Gets rids of irrelevant information.
-%		\item \textbf{Store} - Relevant information from input
-%		\item \textbf{Update} - Selectively update cell state
-%		\item \textbf{Output}
-%	\end{itemize}
-%\end{itemize}
+where: 
+\begin{align*}
+	&x_t \in \mathbb{R}^{d}: \text{input vector to the LSTM unit}\\
+	&f_t \in \mathbb{R}^{h}: \text{forget gate's activation vector}\\
+	&i_t \in \mathbb{R}^{h}: \text{input/store gate's activation vector}\\
+	&o_t \in \mathbb{R}^{h}: \text{output gate's activation vector}\\
+	&h_t \in \mathbb{R}^{h}: \text{hidden state vector also known as output vector of the LSTM unit}\\
+	&\tilde{c}_t \in \mathbb{R}^{h} : \text{cell input activation vector}\\
+	&c_t \in \mathbb{R}^{h} : \text{cell state vector}\\
+	& \sigma_g: \text{sigmoid function} \\
+	& \sigma_h:  \text{hyperbolic tangent function}
+\end{align*}
+The initial values are $c_0 = 0$ and $h_0 = 0$ and the operator $\circ$ denotes the Hadamard product (element-wise product). 
 
 
-%\subsubsection{Neural Network - Hyperbolic tangent  function}
-%$\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
-%\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent %function}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
 
-%
-%\begin{itemize}
-
-
-%.
-
-%\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_GRADIENT_FLOW.png}\caption{LSTM - Gradient flow}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
 
 
 
 
 \subsubsection{LSTM- Multi-cell}
-\textcolor{red}{paragraph on LSTM Multi-cell pros and cons}\\
+
+LSTM Multi-cell architecture stack memory cells in parallel. This enables  having a more expressive networks making them more easy to deal with intricate temporal short-term and long-term dependencies in complex sequences:
 \begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_MULTI.png}\caption{LSTM - Multi layer cells}\end{figure}
+
 \subsubsection{LSTM - in context of rainfall}
 
-\textcolor{red}{paragraph on recent development of LSTM usage in rainfall / runoff problem, reference Fredrick papers on the CAMELS}\\
+LSTM in hydrology have gained popularity in recent years, specifically the success of incorporating LSTM in rainfall-runoff modeling is well established \cite{kratzert2018rainfall}, \cite{kratzert2019toward1},\cite{kratzert2019towards2}  \cite{gauch2021rainfall}.
 
 \textcolor{red}{paragraph on architectures details, NSE loss, performance}\\
 %\begin{itemize}
@@ -665,10 +646,6 @@ where the superscripts $d$ and $h$ refer to the number of input features and num
 %\end{itemize}
 
 \newpage
-
-
-
-
 
 
 \chapter{Results} 
@@ -698,25 +675,8 @@ where the superscripts $d$ and $h$ refer to the number of input features and num
 
 \chapter{Conclusions} 
 \textcolor{red}{TBD}\\
-\chapter{Discussions} 
-
-
-\textcolor{red}{TBD}\\
-\textcolor{red}{Maybe write about Integrated Hessians}	 \cite{DBLP:journals/corr/abs-2002-04138}
 
 \newpage
-
-%
-%$S_{b_1} = \big\{X_i, Y_i\big\}_{i=1}^{i=n_1}\quad , X_i,Y_i \sim f(X,Y| b_1) $  \\ \\
-%$S_{b_2} = \big\{X_i, Y_i\big\}_{i=1}^{i=n_2}\quad , X_i,Y_i \sim f(X,Y| b_2) $ \\
-
-%$S_{b_1} \cup S_{b_2}$ \\
-
-%$X$ \\ $Y$ \\ $ \big\{b_1, b_2\big\}$ \\ \\ 
-
-%$\text{Trained Model} \mapsto \text{Interpetabilty attributes}$ \\
-%$attributes_{\{S_{b_1} \cup S_{b_2}\}}$
-
 	
 
 \printbibliography

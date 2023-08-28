@@ -38,18 +38,17 @@
 \contentsline {subsection}{\numberline {4.1.2}DREAM}{25}{subsection.4.1.2}%
 \contentsline {section}{\numberline {4.2}Models}{26}{section.4.2}%
 \contentsline {subsection}{\numberline {4.2.1}Feed Forward Neural Network}{26}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}The Support Vector Classifier (SVC)}{27}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.2}The Support Vector Classifier (SVC)}{28}{subsection.4.2.2}%
 \contentsline {subsection}{\numberline {4.2.3}RNN}{29}{subsection.4.2.3}%
 \contentsline {subsubsection}{\numberline {4.2.3.1}RNN - Introduction}{29}{subsubsection.4.2.3.1}%
 \contentsline {subsection}{\numberline {4.2.4}LSTM }{30}{subsection.4.2.4}%
 \contentsline {subsubsection}{\numberline {4.2.4.1}LSTM - Principles}{30}{subsubsection.4.2.4.1}%
-\contentsline {subsubsection}{\numberline {4.2.4.2}LSTM- Multi-cell}{31}{subsubsection.4.2.4.2}%
-\contentsline {subsubsection}{\numberline {4.2.4.3}LSTM - in context of rainfall}{31}{subsubsection.4.2.4.3}%
-\contentsline {chapter}{\numberline {5}Results}{32}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Sanity Check}{32}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Dream synthetic Framework}{33}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Dream synthetic model}{33}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}Interpretability method}{33}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}Framework evaluation results}{33}{subsection.5.2.3}%
-\contentsline {chapter}{\numberline {6}Conclusions}{34}{chapter.6}%
-\contentsline {chapter}{\numberline {7}Discussions}{35}{chapter.7}%
+\contentsline {subsubsection}{\numberline {4.2.4.2}LSTM- Multi-cell}{32}{subsubsection.4.2.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.4.3}LSTM - in context of rainfall}{32}{subsubsection.4.2.4.3}%
+\contentsline {chapter}{\numberline {5}Results}{33}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Sanity Check}{33}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Dream synthetic Framework}{34}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Dream synthetic model}{34}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Interpretability method}{34}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Framework evaluation results}{34}{subsection.5.2.3}%
+\contentsline {chapter}{\numberline {6}Conclusions}{35}{chapter.6}%

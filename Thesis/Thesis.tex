@@ -621,30 +621,18 @@ LSTM Multi-cell architecture stack memory cells in parallel. This enables  havin
 
 \subsubsection{LSTM - in context of rainfall}
 
-LSTM in hydrology have gained popularity in recent years, specifically the success of incorporating LSTM in rainfall-runoff modeling is well established \cite{kratzert2018rainfall}, \cite{kratzert2019toward1},\cite{kratzert2019towards2}  \cite{gauch2021rainfall}.
+LSTM in hydrology have gained popularity in recent years, specifically the success of incorporating LSTM in rainfall-runoff modeling is well established \cite{kratzert2018rainfall},\cite{kratzert2019toward1},\cite{kratzert2019towards2} and \cite{gauch2021rainfall}. There was even an attempt to try interpretability (IG) on these models \cite{Kratzert_2019IG}.\\
 
-\textcolor{red}{paragraph on architectures details, NSE loss, performance}\\
-%\begin{itemize}
-%	\item 2018
-%	\begin{itemize}
-%		\item CAMELS - Data set
-%		\item 2-Layer LSTM -cells
-%		\item Input feature size $d=5$ - prcp(mm/day), srad(W/m2), tmax(C), tmin(C), vp(Pa). 
-%		\item Hidden state  size $h=20$
-%		\item Dropout rate = $10\%$
-%		\item Sequemce length - $365$ days. 
-%	\end{itemize} 
-%	\item 2019
-%	\begin{itemize}
-%		\item CAMELS - Data set
-%		\item 1-Layer LSTM 
-%		\item Input feature size $d=5$ ? 
-%		\item Hidden state  size $h=256$
-%		\item Dropout rate = $40\%$
-%		\item Sequence length - $270$ days. 
-%	\end{itemize} 	
-%\end{itemize}
+It's worth mentioning a widely used statistical metric for assessing the performance of hydrological models namely the Nash-Sutcliffe model efficiency coefficient, often denoted as NSE.\\
 
+Given the observed discharge $Q_o(t)$ and the predicted discharge $Q_p(t)$ NSE is defined as follows:\\
+\begin{align*}
+	NSE = 1- \frac{\sum_{t=1}^T (Q_o(t)- Q_p(t))^2}{\sum_{t=1}^T(Q_o(t)- \overline{Q}_o)^2} 
+\end{align*}
+
+Where $\overline{Q}_o = \sum_{t=1}^N \frac{Q_o(t)}{T}$ i.e. the mean of the observed discharge.\\
+ 
+NSE values range from negative infinity to 1, where an NSE of 1 signifies a perfect match, while values below zero indicate that the observed mean outperforms the model i.e. better than just predicting the mean of the sequence.
 \newpage
 
 

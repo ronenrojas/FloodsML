@@ -499,146 +499,86 @@ For the two modalities of the data set we use different distribution parameters 
 $\lambda$ was used as a normalization factor to make the annual mean precipitation equal between the two modes. 
 \subsection{DREAM}
 
-For the runoff model we've used the well established Hydrometeorological daily recharge assessment model (DREAM) \cite{DREAM}.
+For the runoff model we've used the well established Hydrometeorological daily recharge assessment model (DREAM) \cite{DREAM}. In short this model tries to delineate between the runoff discharge and the ground water recharge, this model has displayed good empirical results.
 \newpage
 \section{Models}
 \subsection{Feed Forward Neural Network}
-Deep Neural Networks (DNNs) represent a powerful class of machine learning models designed for classification tasks. These networks consist of multiple layers of interconnected nodes, each layer responsible for learning increasingly abstract features from the input data.\\ 
 
-In the context of classification, DNNs can automatically learn to extract relevant patterns and representations from complex data, enabling them to discern intricate relationships within the input features. The process of training involves adjusting the network's parameters through backpropagation, where errors are propagated backward to fine-tune the connections between nodes. DNNs have demonstrated remarkable success in various domains, from image and speech recognition to natural language processing, ushering in transformative advances in automated classification tasks.\\
+We've used Deep Neural Networks (DNNs) for classification tasks. The network consist of multiple layers of interconnected nodes. In the context of classification, DNNs can automatically learn to extract relevant patterns and representations from complex data.\\   
+\begin{figure}[H]\centering\includegraphics[width=4cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
 
-\textcolor{red}{paragraph Affine layer, activation functions:  sigmoid, Relu, }\\
+Every layer is an affine layer that ends with a non-linear point wise activation function e.g.: sigmoid, Relu.\\
 
-\textcolor{red}{paragraph about training and backpropogation}\\
-
-\textcolor{red}{paragraph different loss function for different tasks, MSE, L1, Cross entropy, regularization, multi-tasking ?}\\
-
-
-
-
-%\subsubsection{Neural Network - Introduction}
-\begin{itemize}
-	\item $y = f_{W}(x), x \in \mathbb{R}^n, y \in \mathbb{R}^m$ 
-	\item $W$ Learn-able parameters
-	\item Data set $\{x_i, y_i \}_{i=1}^k$
-	\item Loss function $L(f(x_i), y_i)$
-	\item Gradient decent $W_t = W_{t-1} + \alpha \nabla_{W}L(x,y) $ 
-\end{itemize}
-
-\begin{figure}[H]\centering\includegraphics[width=6cm]{FFNN.png}\caption{Neural Network Architecture}\end{figure}
-
-
-The Support Vector Classifier (SVC) aims to find the optimal hyperplane that separates classes in a binary classification problem. Given a set of training samples $\{(x_1, y_1), (x_2, y_2), \ldots, (x_n, y_n)\}$ where $x_i$ represents the feature vector and $y_i \in \{-1, 1\}$ is the class label, SVC seeks to find the hyperplane defined by:
-
-
-$w \cdot x + b = 0$
-
-
-where $w$ is the weight vector perpendicular to the hyperplane, and $b$ is the bias term. The goal is to maximize the margin, i.e., the distance between the hyperplane and the nearest data points of each class. The optimization problem can be formulated as:
-
+An Affine layer is defined as follows: 
 \begin{align*}
-	& \underset{w, b}{\text{minimize}}
-	& & \|w\| \\
-	& \text{subject to}
-	& & y_i(w \cdot x_i + b) \geq 1, \quad i = 1, \ldots, n
+	y = Ax + b , x \in \mathbb{R}^n, b, y \in \mathbb{R}^m, A \in \mathbb{R}^{m \times n}
 \end{align*}
 
-%newpage
-%\subsubsection{Neural Network - Function definitions}
-%\begin{itemize}
-%	\item Affine layer $y = Ax + b , x \in \mathbb{R}^n, b, y \in \mathbb{R}^m, A \in \mathbb{R}^{m \times n}$
-%	\item Activation point wise
-%	\begin{itemize}
-%		\item $\sigma_g(z) = \frac{1}{1+e^{-z}}$ - Sigmoid 
-%		\item $ReLU(z) = \max(0, z)$  - Rectified linear unit
-%	\end{itemize}	
-%\end{itemize}
-
-%\begin{figure}[H]\centering\includegraphics[width=6cm]{sigmoid.png}\caption{Sigmoid function}\end{figure}
-%\begin{figure}[H]\centering\includegraphics[width=6cm]{RELU.png}\caption{ReLU function}\end{figure}
-
-%newpage
-%\subsubsection{Neural Network - Layering functions}
-
-%\begin{itemize}
-%	\item Dense: $y = \sigma(L), L = Ax+b$
-%	\item Expressiveness 
-%	\item Back propagation - $\frac{\partial y}{ \partial w} =  \frac{\partial y}{ \partial L} \cdot \frac{\partial L}{ \partial w}$
-%\end{itemize}
+Activation functions:
+\begin{itemize}
+	\item $\sigma_g(z) = \frac{1}{1+e^{-z}}$ - Sigmoid 
+	\item $ReLU(z) = \max(0, z)$  - Rectified linear unit
+\end{itemize}	
+\begin{figure}[H]\centering\includegraphics[width=6cm]{sigmoid.png}\caption{Sigmoid function}\end{figure}
+\begin{figure}[H]\centering\includegraphics[width=6cm]{RELU.png}\caption{ReLU function}\end{figure}
 
 
-%\subsubsection{Neural Network - Hyperbolic tangent  function}
-%$\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
-%\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent %function}\end{figure}
+
+The process of training involves adjusting the network's parameters through backpropagation, where errors are propagated backward to fine-tune the connections between nodes.\\
+
+There are different loss function for different tasks, MSE, L1, Cross entropy. But for the classification task we've used the binary cross-entropy loss:
+\begin{align*}
+	l(x,y) = 	-x\log(y)-(1-x)\log(1-y)
+\end{align*}
+ 
 
 
+\subsection{The Support Vector Classifier (SVC)}
+
+The Support Vector Classifier (SVC) aims to find the optimal hyperplane that separates classes in a binary classification problem. One can use a linear kernel to find the hyperplane separator but some non-linear kernels $\phi(x)$ can be utilized to get a non-linear separation.\\   
+
+Given a set of training samples $\{(x_1, y_1), (x_2, y_2), \ldots, (x_n, y_n)\}$ where $x_i$ is the feature vector and $y_i \in \{-1, 1\}$ is the class label, the optimization problem for SVM with a kernel function:
+
+
+\begin{align*}
+	& \underset{w, b, \xi}{\text{min}}
+	& & \frac{1}{2} \|w\|^2 + C \sum_{i=1}^{n} \xi_i \\
+	& \text{s.t.}
+	& & y_i (w \cdot \phi(x_i) + b) \geq 1 - \xi_i, \quad i = 1, \ldots, n \\
+	& & & \xi_i \geq 0, \quad i = 1, \ldots, n
+\end{align*}
+
+
+where:
+\begin{align*}
+	&w  \text{ is the weight vector perpendicular to the hyperplane}, \\
+	&b  \text{ is the bias term}, \\
+	&\xi_i  \text{ are slack variables}, \\
+	&C  \text{ is the regularization parameter}, \\
+	&\phi(x_i)  \text{ is the feature mapping of } x_i \text{ into a higher-dimensional space using the kernel function }.
+\end{align*}
 
 \newpage
 \subsection{RNN}
 
 \subsubsection{RNN - Introduction}
-\textcolor{red}{paragraph on RNN definition}\\
 
-\textcolor{red}{paragraph on RNN drawbacks in training}\\
+Recurrent Neural Networks (RNNs) have connections that loop back, this enables the network to have memory of past inputs so to speak. The input to RNNs are signals with timestamp (time series) - $\{x_t, y_t \}_{t=1}^k$.\\
 
-
-%\begin{itemize}
-%	\item Signals with timestamp (time series) - $\{x_t, y_t \}_{t=1}^k$
-%	\item Hidden state - $h_t = f_{W}(x_t, h_{t-1})$
-%	\item Same weights $W$ for each step
-%	\item Popular in Natural Language Processing (NLP)
-%\end{itemize}
-%\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN.png}\caption{RNN}\end{figure}
+RNNS utilis the hidden state to predict the labels $h_t = f_{W}(x_t, h_{t-1})$.\\
+\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN.png}\caption{RNN}\end{figure}
 
 
-%\subsubsection{RNN - Multi-Layer}
-%\begin{figure}[H]\centering\includegraphics[width=10cm]{RNN_MULTI.png}\caption{RNN - MultiLayer}\end{figure}
-%\begin{align*}
-%	h_t^{layer} = \sigma_h \bigg(W^{layer} \begin{pmatrix}
-%		h_{t}^{layer-1} \\ h_{t-1}^{layer}
-%	\end{pmatrix} \bigg)
-%\end{align*}
-
+However, standard RNNs can suffer from vanishing or exploding gradients, limiting their ability to capture long-range dependencies. To overcome these issues, variants like Long Short-Term Memory (LSTM) were developed which will be presented in the next section:
 
 \newpage
 
-\subsubsection{LSTM }
+\subsection{LSTM }
+
+LSTM is a special kind of RNN, designed to overcome the short-comes of RNN such as complicated training procedures and  difficulty to processes long sequences. Remembering information for long periods of time is intrinsic to LSTM.
 
 
-
-\textcolor{red}{paragraph on LSTM motivation, Gradient vanishing and exploding }\\
-
-%LSTM (Long Short Term Memory) is a special kind of RNN,  designed to overcome the limitation of RNN
-%\begin{itemize}
-%	\item 
-%	\item Complex training
-%	\item Difficulty to processes long sequences 
-%\end{itemize}
-
-%Remembering information for long periods of time is intrinsic to LSTM.
-
-%\subsubsection{LSTM - Principles}
-
-
-%\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
-
-%\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
-\textcolor{red}{paragraph on LSTM definition, Cells,  Forget, Store, Update Outputs gates}\\
-%\begin{itemize}
-%	\item Separate Cell state
-%	\item Gate to control flow of information:
-%	\begin{itemize}
-%		\item \textbf{Forget} - Gets rids of irrelevant information.
-%		\item \textbf{Store} - Relevant information from input
-%		\item \textbf{Update} - Selectively update cell state
-%		\item \textbf{Output}
-%	\end{itemize}
-%\end{itemize}
-
-
-%\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_GRADIENT_FLOW.png}\caption{LSTM - Gradient flow}\end{figure}
-
-
+\subsubsection{LSTM - Principles}
 \begin{align*}
 	f_t &= \sigma_g(W_{f} x_t + U_{f} h_{t-1} + b_f) \\
 	i_t &= \sigma_g(W_{i} x_t + U_{i} h_{t-1} + b_i) \\
@@ -662,6 +602,37 @@ where the initial values are $c_0 = 0$ and $h_0 = 0$ and the operator $\circ$ de
 \end{itemize}
 
 where the superscripts $d$ and $h$ refer to the number of input features and number of hidden units, respectively.
+
+
+%\begin{figure}[H]\centering\includegraphics[width=7.5cm]{LSTM_MAIN.jpeg}\caption{LSTM - Scheme}\end{figure}
+
+%\begin{figure}[H]\centering\includegraphics[width=14cm]{LSTM_SCHEME.jpeg}\caption{LSTM - Scheme}\end{figure}
+\textcolor{red}{paragraph on LSTM definition, Cells,  Forget, Store, Update Outputs gates}\\
+%\begin{itemize}
+%	\item Separate Cell state
+%	\item Gate to control flow of information:
+%	\begin{itemize}
+%		\item \textbf{Forget} - Gets rids of irrelevant information.
+%		\item \textbf{Store} - Relevant information from input
+%		\item \textbf{Update} - Selectively update cell state
+%		\item \textbf{Output}
+%	\end{itemize}
+%\end{itemize}
+
+
+%\subsubsection{Neural Network - Hyperbolic tangent  function}
+%$\sigma_h = \tanh(z) = \frac{e^z-e^{-z}}{e^z+e^{-z}}$
+%\begin{figure}[H]\centering\includegraphics[width=6cm]{tanh.png}\caption{Hyperbolic tangent %function}\end{figure}
+
+%
+%\begin{itemize}
+
+
+%.
+
+%\begin{figure}[H]\centering\includegraphics[width=10cm]{LSTM_GRADIENT_FLOW.png}\caption{LSTM - Gradient flow}\end{figure}
+
+
 
 
 \subsubsection{LSTM- Multi-cell}
